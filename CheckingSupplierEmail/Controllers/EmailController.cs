@@ -1,5 +1,6 @@
 ﻿using CheckingSupplierEmail.Models.DbViewModels;
 using CheckingSupplierEmail.Repositories;
+using JWTRegen.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -15,13 +16,16 @@ namespace CheckingSupplierEmail.Controllers
     {
         private readonly PurCCEmailRepository _email;
         private readonly EmployeeRepository _emp;
+        private readonly IClaimsHelper _claimsHelper;
 
         public EmailController(
             PurCCEmailRepository email,
-            EmployeeRepository emp)
+            EmployeeRepository emp,
+            JWTRegen.Interfaces.IClaimsHelper claimsHelper)
         {
             _email = email;
             _emp = emp;
+            _claimsHelper = claimsHelper;
         }
 
         public class vSetEmailVM
@@ -51,9 +55,7 @@ namespace CheckingSupplierEmail.Controllers
                 {
                     return GenerateErrorResponse();
                 }
-                // FORTEST
-                string txt_user = "240002";
-                // FORTEST
+                string txt_user = _claimsHelper.GetUserId(User);
                 await _email.UpdateUsername(form.txt_oldusername, form.txt_newusername, txt_user);
                 var obj_emp = await _emp.GetByEmpno(form.txt_newusername);
                 string empnameeng = obj_emp.empnameeng;
@@ -101,9 +103,7 @@ namespace CheckingSupplierEmail.Controllers
         {
             try
             {
-                // FORTEST
-                string txt_user = "240002";
-                // FORTEST
+                string txt_user = _claimsHelper.GetUserId(User);
                 await _email.RemoveUsername(txt_username, txt_user);
                 return Json(new { success = true, text = "Remove successfully." });
             }
@@ -136,10 +136,8 @@ namespace CheckingSupplierEmail.Controllers
                 {
                     return GenerateErrorResponse();
                 }
-                // FORTEST
-                string txt_user = "240002";
+                string txt_user = _claimsHelper.GetUserId(User);
                 await _email.Add(form.txt_username, "EMAIL", form.txt_email, txt_user);
-                // FORTEST
                 return Json(new { success = true, text = "Add email successfully." });
             }
             catch (Exception ex)
@@ -198,8 +196,7 @@ namespace CheckingSupplierEmail.Controllers
                     return GenerateErrorResponse();
                 }
 
-                // FORTEST
-                string txt_user = "240002";
+                string txt_user = _claimsHelper.GetUserId(User);
                 await _email.Update(form.txt_id, form.txt_email, txt_user);
 
                 return Json(new { success = true, text = "Email updated successfully." });
@@ -238,10 +235,8 @@ namespace CheckingSupplierEmail.Controllers
         {
             try
             {
-                // FORTEST
-                string txt_user = "240002";
+                string txt_user = _claimsHelper.GetUserId(User);
                 await _email.Delete(txt_id, txt_user);
-                // FORTEST
                 return Json(new { success = true, text = "Remove email successfully." });
             }
             catch (Exception ex)
@@ -271,8 +266,7 @@ namespace CheckingSupplierEmail.Controllers
                     return GenerateErrorResponse();
                 }
 
-                // FORTEST
-                string txt_user = "240002";
+                string txt_user = _claimsHelper.GetUserId(User);
                 await _email.Update(form.txt_id, form.txt_empno, txt_user);
 
                 return Json(new { success = true, text = "Empno updated successfully." });
@@ -328,10 +322,8 @@ namespace CheckingSupplierEmail.Controllers
                 {
                     return GenerateErrorResponse();
                 }
-                // FORTEST
-                string txt_user = "240002";
+                string txt_user = _claimsHelper.GetUserId(User);
                 await _email.Add(form.txt_username, "EMPNO", form.txt_empno, txt_user);
-                // FORTEST
                 return Json(new { success = true, text = "Add empno successfully." });
             }
             catch (Exception ex)

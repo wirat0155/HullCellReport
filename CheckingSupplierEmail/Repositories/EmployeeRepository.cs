@@ -19,7 +19,7 @@ namespace CheckingSupplierEmail.Repositories
 
         public async Task<vw_emp> GetByEmpno(string txt_empno)
         {
-            string sql = $@"SELECT [empno], [empnameeng], [empstatusno] FROM [vw_emp] WHERE [empno] = @txt_empno";
+            string sql = $@"SELECT [empno], [empnameeng], [empstatusno], [departmentno] FROM [vw_emp] WHERE [empno] = @txt_empno";
             return await _dapper.QueryFirst<vw_emp>("1", sql, new { txt_empno });
         }
 

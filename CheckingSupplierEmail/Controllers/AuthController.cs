@@ -1,4 +1,5 @@
-﻿using CheckingSupplierEmail.Repositories;
+﻿using CheckingSupplierEmail.Models.DbViewModels;
+using CheckingSupplierEmail.Repositories;
 using JWTRegen.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -33,12 +34,17 @@ namespace CheckingSupplierEmail.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Login(LoginVM model)
+        public async Task<IActionResult> Login(LoginVM form)
         {
             try
             {
-                await _emp.Login(model.txt_empno, model.txt_password);
-                var token = _jwtTokenService.GenerateToken(model.txt_empno, "user");
+                if (await ValLogin(form))
+                {
+                    return GenerateErrorResponse();
+                }
+               
+
+                var token = _jwtTokenService.GenerateToken(form.txt_empno, "user");
 
                 Response.Cookies.Append("purvenportal_jwt", token, new CookieOptions
                 {
@@ -54,6 +60,25 @@ namespace CheckingSupplierEmail.Controllers
             {
                 return Json(new { success = false, text = ex.Message });
             }
+        }
+
+        private async Task<bool> ValLogin(LoginVM form)
+        {
+            bool result = false;
+            await _emp.Login(form.txt_empno, form.txt_password);
+            vw_emp obj_emp = await _emp.GetByEmpno(form.txt_empno);
+            if(obj_emp.empstatusno == "R")
+            {
+                ModelState.AddModelError("txt_empno", "Username is already resigned.");
+                return true;
+            }
+            var allowedDepartments = new List<string> { "PCM", "ISM" };
+            if (!allowedDepartments.Contains(obj_emp.departmentno))
+            {
+                ModelState.AddModelError("txt_empno", "You do not have permission to access the system.");
+                return true;
+            }
+            return result;
         }
 
         [HttpGet]
