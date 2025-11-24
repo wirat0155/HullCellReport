@@ -126,7 +126,7 @@ function renderTable(data, page) {
                     <div>${dateStr}</div>
                     <div style="font-size: 12px; color: #6c757d;">${timeStr}</div>
                 </td>
-                <td>${item.createdBy || '-'}</td>
+                <td>${item.createdByName || 'Unknown'}</td>
                 <td>${badge208N}</td>
                 <td>${badge208T}</td>
                 <td>${badge208A}</td>

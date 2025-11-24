@@ -213,6 +213,23 @@ namespace HullCellReport.Repositories
             return true;
         }
 
+        public async Task<Dictionary<string, string>> GetEmployeeNamesByEmpnos(IEnumerable<string> empnos)
+        {
+            if (empnos == null || !empnos.Any())
+                return new Dictionary<string, string>();
+
+            var uniqueEmpnos = empnos.Distinct().ToList();
+            var empnoList = string.Join(",", uniqueEmpnos.Select(e => $"'{e.Replace("'", "''")}'"));
+            
+            string sql = $@"SELECT [empno], [empnameeng] 
+                           FROM [vw_emp] 
+                           WHERE [empno] IN ({empnoList})";
+            
+            var employees = await _dapper.Query<vw_emp>("UICT", sql);
+            
+            return employees.ToDictionary(e => e.empno, e => e.empnameeng ?? "");
+        }
+
         public async Task<bool> Login(string empno, string password)
         {
             string sql = $"SELECT [username] FROM [vw_username_subcon] " +

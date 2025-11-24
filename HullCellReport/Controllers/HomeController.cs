@@ -793,12 +793,22 @@ namespace HullCellReport.Controllers
                     }
                 }
 
+                // Get unique empnos and fetch employee names in one query
+                var uniqueEmpnos = allReports
+                    .Where(r => !string.IsNullOrEmpty(r.txt_analysis_by))
+                    .Select(r => r.txt_analysis_by)
+                    .Distinct()
+                    .ToList();
+
+                var empNameMap = await _employeeRepo.GetEmployeeNamesByEmpnos(uniqueEmpnos);
+
                 // Transform to display format
                 var transformedData = allReports.Select(r => new
                 {
                     id = r.txt_uuid,
                     createdDate = r.txt_credate,
-                    createdBy = r.txt_creuser,
+                    createdBy = r.txt_analysis_by,
+                    createdByName = empNameMap.ContainsKey(r.txt_analysis_by ?? "") ? empNameMap[r.txt_analysis_by] : "",
                     tank208N = r.txt_auto_feed_208n ?? "",
                     tank208T = r.txt_auto_feed_208t ?? "",
                     tank208A = r.txt_auto_feed_208a ?? "",
