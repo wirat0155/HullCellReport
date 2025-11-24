@@ -370,9 +370,108 @@
             opacity: 1;
             color: #ffd700;
         }
+
+    .sampling-count-card {
+        background: linear-gradient(135deg, #9e9e9e 0%, #757575 100%);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+        color: white;
+        box-shadow: 0 4px 12px rgba(158, 158, 158, 0.3);
+        display: none;
+        transition: all 0.3s ease;
+    }
+
+        .sampling-count-card.show {
+            display: block;
+        }
+
+        .sampling-count-card.complete {
+            background: linear-gradient(135deg, #66bb6a 0%, #43a047 100%);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+        }
+
+    .sampling-count-content {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .sampling-count-icon {
+        font-size: 48px;
+        opacity: 0.9;
+    }
+
+    .sampling-count-info {
+        flex: 1;
+        margin-left: 20px;
+    }
+
+    .sampling-count-label {
+        font-size: 14px;
+        opacity: 0.9;
+        margin-bottom: 5px;
+    }
+
+    .sampling-count-value {
+        font-size: 36px;
+        font-weight: 700;
+        letter-spacing: 2px;
+    }
+
+        .sampling-count-value .count {
+            color: #ffd700;
+        }
+
+        .sampling-count-value .total {
+            opacity: 0.8;
+        }
+
+    .sampling-count-status {
+        text-align: right;
+    }
+
+    .sampling-status-badge {
+        display: inline-block;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+    }
+
+        .sampling-status-badge.complete {
+            background: rgba(76, 175, 80, 0.3);
+        }
+
+        .sampling-status-badge.incomplete {
+            background: rgba(255, 152, 0, 0.3);
+        }
 </style>
 
 <div class="container-fluid py-4">
+    <!-- Sampling Count Card (shown only when filtering by today) -->
+    <div class="sampling-count-card" id="samplingCountCard">
+        <div class="sampling-count-content">
+            <div class="sampling-count-icon">
+                <i class="fas fa-calendar-check"></i>
+            </div>
+            <div class="sampling-count-info">
+                <div class="sampling-count-label">
+                    จำนวนครั้งที่ทำวันนี้
+                    <span style="font-size: 12px; opacity: 0.8; margin-left: 8px;" id="todayDate"></span>
+                </div>
+                <div class="sampling-count-value">
+                    <span class="count" id="samplingCount">0</span><span class="total">/2</span>
+                </div>
+            </div>
+            <div class="sampling-count-status">
+                <span class="sampling-status-badge" id="samplingStatusBadge">ยังไม่ครบ</span>
+            </div>
+        </div>
+    </div>
+
     <div class="dashboard-card">
         <h2 class="card-title">
             <i class="fas fa-flask-vial"></i>

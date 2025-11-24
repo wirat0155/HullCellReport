@@ -41,19 +41,22 @@ async function loadData(page) {
         });
 
         const response = await fetch(`${basePath}/Home/GetHullCellReports?${params}`);
-        const { success, data, total } = await response.json();
+        const { success, data, total, todaySamplingCount, todayDate } = await response.json();
 
         if (success) {
             totalRecords = total;
             renderTable(data, page);
             renderPagination(page);
             updateSortIcon();
+            updateSamplingCountCard(todaySamplingCount, todayDate);
         } else {
             showNoData();
+            hideSamplingCountCard();
         }
     } catch (error) {
         console.error('Error loading data:', error);
         showNoData();
+        hideSamplingCountCard();
     } finally {
         hideLoader();
     }
@@ -299,6 +302,38 @@ function viewReport(uuid) {
 // Edit report function
 function editReport(uuid) {
     window.location.href = `${basePath}/Home/vCreateReport?uuid=${uuid}`;
+}
+
+// Update sampling count card
+function updateSamplingCountCard(count, todayDate) {
+    const card = document.getElementById('samplingCountCard');
+    const countElement = document.getElementById('samplingCount');
+    const statusBadge = document.getElementById('samplingStatusBadge');
+    const dateElement = document.getElementById('todayDate');
+    
+    card.classList.add('show');
+    countElement.textContent = count;
+    
+    if (todayDate) {
+        dateElement.textContent = `(${todayDate})`;
+    }
+    
+    if (count >= 2) {
+        statusBadge.textContent = 'ครบแล้ว ✓';
+        statusBadge.classList.remove('incomplete');
+        statusBadge.classList.add('complete');
+        card.classList.add('complete');
+    } else {
+        statusBadge.textContent = 'ยังไม่ครบ';
+        statusBadge.classList.remove('complete');
+        statusBadge.classList.add('incomplete');
+        card.classList.remove('complete');
+    }
+}
+
+function hideSamplingCountCard() {
+    const card = document.getElementById('samplingCountCard');
+    card.classList.remove('show');
 }
 
 // Delete report function

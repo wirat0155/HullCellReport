@@ -853,7 +853,18 @@ namespace HullCellReport.Controllers
                 var total = sortedData.Count;
                 var pagedData = sortedData.Skip((page - 1) * pageSize).Take(pageSize).ToList();
 
-                return Json(new { success = true, data = pagedData, total });
+                // Count today's sampling (always use Bangkok time)
+                var bangkokTimeZone = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
+                var todayBangkok = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, bangkokTimeZone).Date;
+                
+                int todaySamplingCount = allReports.Count(r => 
+                    !string.IsNullOrEmpty(r.txt_sampling_date) && 
+                    DateTime.TryParse(r.txt_sampling_date, out DateTime samplingDate) &&
+                    samplingDate.Date == todayBangkok);
+
+                var todayDateString = todayBangkok.ToString("dd/MM/yyyy", new System.Globalization.CultureInfo("th-TH"));
+
+                return Json(new { success = true, data = pagedData, total, todaySamplingCount, todayDate = todayDateString });
             }
             catch (Exception ex)
             {
