@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Hull Cell Report</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" />
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #f5f7fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        /* Chemical Loader */
+        .chemical-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 1;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+            .chemical-loader.hidden {
+                opacity: 0;
+                visibility: hidden;
+            }
+
+        .beaker-loader {
+            position: relative;
+            width: 120px;
+            height: 140px;
+        }
+
+        .beaker-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        .beaker-glass {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 100px;
+            border: 4px solid rgba(0, 188, 212, 0.6);
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            background: rgba(0, 188, 212, 0.05);
+            box-shadow: 0 0 30px rgba(0, 188, 212, 0.3), inset 0 0 20px rgba(0, 188, 212, 0.1);
+        }
+
+            .beaker-glass::before {
+                content: '';
+                position: absolute;
+                top: -4px;
+                left: -10px;
+                right: -10px;
+                height: 4px;
+                background: rgba(0, 188, 212, 0.6);
+                border-radius: 2px;
+            }
+
+        .liquid {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 72px;
+            height: 0;
+            background: linear-gradient(180deg, rgba(0, 188, 212, 0.8), rgba(0, 150, 136, 0.9));
+            border-radius: 0 0 6px 6px;
+            animation: fillBeaker 2s ease-in-out infinite;
+            box-shadow: 0 0 20px rgba(0, 188, 212, 0.5);
+        }
+
+        @@keyframes fillBeaker {
+            0%, 100% {
+                height: 20px;
+            }
+
+            50% {
+                height: 80px;
+            }
+        }
+
+        .bubble-loader {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            width: 8px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 50%;
+            animation: bubbleRise 2s ease-in-out infinite;
+        }
+
+            .bubble-loader:nth-child(1) {
+                left: 35%;
+                animation-delay: 0s;
+            }
+
+            .bubble-loader:nth-child(2) {
+                left: 50%;
+                animation-delay: 0.4s;
+                width: 6px;
+                height: 6px;
+            }
+
+            .bubble-loader:nth-child(3) {
+                left: 65%;
+                animation-delay: 0.8s;
+                width: 10px;
+                height: 10px;
+            }
+
+        @@keyframes bubbleRise {
+            0% {
+                bottom: 10px;
+                opacity: 0;
+            }
+
+            20% {
+                opacity: 1;
+            }
+
+            100% {
+                bottom: 90px;
+                opacity: 0;
+            }
+        }
+
+        .loader-text {
+            position: absolute;
+            bottom: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #00bcd4;
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            white-space: nowrap;
+        }
+
+        .loader-dots::after {
+            content: '';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+
+        @@keyframes dots {
+            0%, 20% {
+                content: '';
+            }
+
+            40% {
+                content: '.';
+            }
+
+            60% {
+                content: '..';
+            }
+
+            80%, 100% {
+                content: '...';
+            }
+        }
+
+        .flask-icon-loader {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 32px;
+            color: #00bcd4;
+            animation: pulse 2s ease-in-out infinite;
+            filter: drop-shadow(0 0 10px rgba(0, 188, 212, 0.5));
+        }
+
+        @@keyframes pulse {
+            0%, 100% {
+                transform: translateX(-50%) scale(1);
+            }
+
+            50% {
+                transform: translateX(-50%) scale(1.05);
+            }
+        }
+
+        .topbar {
+            background: linear-gradient(135deg, #00bcd4, #009688);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .topbar-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 24px;
+            max-width: 100%;
+        }
+
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .topbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: white;
+            font-size: 20px;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+            .topbar-brand i {
+                font-size: 24px;
+            }
+
+            .topbar-brand:hover {
+                color: white;
+                opacity: 0.9;
+            }
+
+        .topbar-menu {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .topbar-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+            .topbar-btn:hover {
+                background: rgba(255, 255, 255, 0.3);
+                color: white;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            }
+
+            .topbar-btn i {
+                font-size: 16px;
+            }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+            .user-info:hover {
+                background: rgba(255, 255, 255, 0.25);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            }
+
+            .user-info i {
+                font-size: 20px;
+                color: #fff;
+            }
+
+            .user-info .user-name {
+                color: #fff;
+                font-weight: 600;
+                font-size: 13px;
+                white-space: nowrap;
+            }
+
+        .btn-primary-custom {
+            background: white;
+            color: #00bcd4;
+            border: none;
+        }
+
+            .btn-primary-custom:hover {
+                background: #f0f0f0;
+                color: #00bcd4;
+            }
+
+        .btn-logout {
+            background: rgba(244, 67, 54, 0.2);
+            border-color: rgba(244, 67, 54, 0.3);
+        }
+
+            .btn-logout:hover {
+                background: rgba(244, 67, 54, 0.3);
+            }
+
+        .main-content {
+            min-height: calc(100vh - 60px);
+        }
+
+        @@media (max-width: 768px) {
+            .topbar-container {
+                padding: 10px 15px;
+            }
+
+            .topbar-brand span {
+                display: none;
+            }
+
+            .topbar-btn span {
+                display: none;
+            }
+
+            .topbar-btn {
+                padding: 10px 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Chemical Loader -->
+    <div class="chemical-loader hidden" id="chemicalLoader">
+        <div class="beaker-loader">
+            <i class="fas fa-flask-vial flask-icon-loader"></i>
+            <div class="beaker-container">
+                <div class="beaker-glass"></div>
+                <div class="liquid"></div>
+                <div class="bubble-loader"></div>
+                <div class="bubble-loader"></div>
+                <div class="bubble-loader"></div>
+            </div>
+            <div class="loader-text">
+                LOADING<span class="loader-dots"></span>
+            </div>
+        </div>
+    </div>
+
+    <nav class="topbar">
+        <div class="topbar-container">
+            <div class="topbar-left">
+                <a href="@Url.Action("vDashboard", "Home")" class="topbar-brand">
+                    <i class="fas fa-flask-vial"></i>
+                    <span>Hull Cell Report</span>
+                </a>
+                <div class="topbar-menu">
+                    <a href="@Url.Action("vCreateReport", "Home")" class="topbar-btn btn-primary-custom" id="createReportBtn">
+                        <i class="fas fa-plus-circle"></i>
+                        <span>สร้าง Report ใหม่</span>
+                    </a>
+                    <a href="@Url.Action("vPermission", "Permission")" class="topbar-btn" id="permissionMenuBtn" style="display: none;">
+                        <i class="fas fa-user-shield"></i>
+                        <span>จัดการสิทธิ์</span>
+                    </a>
+                </div>
+            </div>
+            <div class="topbar-right">
+                <div class="user-info" id="userInfo">
+                    <i class="fas fa-user-circle"></i>
+                    <span class="user-name">Loading...</span>
+                </div>
+                <a href="@Url.Action("Logout", "Auth")" class="topbar-btn btn-logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        @RenderBody()
+    </main>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    
+    <script>
+        // Check for incomplete reports before creating new
+        document.addEventListener('DOMContentLoaded', function() {
+            const createBtn = document.getElementById('createReportBtn');
+            if (createBtn) {
+                createBtn.addEventListener('click', async function(e) {
+                    e.preventDefault();
+                    
+                    try {
+                        const response = await fetch(`${basePath}/Home/CheckIncompleteReports`);
+                        const { success, hasIncomplete, uuid, message } = await response.json();
+                        
+                        if (success && hasIncomplete) {
+                            Swal.fire({
+                                title: 'แจ้งเตือน',
+                                text: message,
+                                icon: 'warning',
+                                showCancelButton: true,
+                                confirmButtonColor: '#ff9800',
+                                cancelButtonColor: '#6c757d',
+                                confirmButtonText: 'ไปแก้ไขรายการเดิม',
+                                cancelButtonText: 'ยกเลิก'
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    window.location.href = `${basePath}/Home/vCreateReport?uuid=${uuid}`;
+                                }
+                            });
+                        } else {
+                            window.location.href = `${basePath}/Home/vCreateReport`;
+                        }
+                    } catch (error) {
+                        console.error('Error checking incomplete reports:', error);
+                        window.location.href = `${basePath}/Home/vCreateReport`;
+                    }
+                });
+            }
+
+            // Check permission menu visibility
+            checkPermissionMenuVisibility();
+
+            // Load user info
+            loadUserInfo();
+        });
+
+        async function checkPermissionMenuVisibility() {
+            try {
+                const response = await fetch(`${basePath}/Permission/CheckPermissionMenuAccess`);
+                const { success, hasAccess } = await response.json();
+                
+                if (success && hasAccess) {
+                    const permissionMenu = document.getElementById('permissionMenuBtn');
+                    if (permissionMenu) {
+                        permissionMenu.style.display = 'flex';
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking permission menu access:', error);
+            }
+        }
+
+        async function loadUserInfo() {
+            // Check if user info is cached in sessionStorage
+            const cachedUserInfo = sessionStorage.getItem('userInfo');
+            
+            if (cachedUserInfo) {
+                const { empno, empnameeng } = JSON.parse(cachedUserInfo);
+                displayUserInfo(empno, empnameeng);
+                return;
+            }
+
+            // If not cached, fetch from server
+            try {
+                const response = await fetch(`${basePath}/Home/GetCurrentUserInfo`);
+                const { success, empno, empnameeng } = await response.json();
+                
+                if (success && empno) {
+                    // Cache in sessionStorage
+                    sessionStorage.setItem('userInfo', JSON.stringify({ empno, empnameeng }));
+                    displayUserInfo(empno, empnameeng);
+                }
+            } catch (error) {
+                console.error('Error loading user info:', error);
+            }
+        }
+
+        function displayUserInfo(empno, empnameeng) {
+            const userInfoDiv = document.getElementById('userInfo');
+            if (userInfoDiv) {
+                userInfoDiv.innerHTML = `
+                    <i class="fas fa-user-circle"></i>
+                    <span class="user-name">${empno} - ${empnameeng || 'User'}</span>
+                `;
+            }
+        }
+    </script>
+    
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

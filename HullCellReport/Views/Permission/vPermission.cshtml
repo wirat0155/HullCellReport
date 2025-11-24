@@ -1,0 +1,733 @@
+@{
+    ViewData["Title"] = "จัดการสิทธิ์";
+    Layout = "_LayoutDashboard";
+}
+
+<style>
+    .permission-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .permission-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        padding: 30px;
+    }
+
+    .card-title {
+        font-size: 24px;
+        font-weight: 600;
+        color: #1a1a2e;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+    }
+
+        .card-title i {
+            color: #00bcd4;
+            margin-right: 10px;
+        }
+
+    .search-box {
+        margin-bottom: 20px;
+    }
+
+        .search-box input {
+            width: 100%;
+            max-width: 400px;
+            padding: 10px 15px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+    .user-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+
+        .user-table thead {
+            background: linear-gradient(135deg, #00bcd4, #009688);
+            color: white;
+        }
+
+        .user-table th {
+            padding: 14px 16px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .user-table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 14px;
+        }
+
+        .user-table tbody tr:hover {
+            background-color: #f5f5f5;
+        }
+
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 24px;
+    }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: .4s;
+        border-radius: 24px;
+    }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+    input:checked + .slider {
+        background-color: #00bcd4;
+    }
+
+    input:checked + .slider:before {
+        transform: translateX(26px);
+    }
+
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-content {
+        background-color: white;
+        margin: 10% auto;
+        padding: 30px;
+        border-radius: 12px;
+        width: 90%;
+        max-width: 500px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .modal-header h3 {
+        margin: 0;
+        color: #1a1a2e;
+        font-size: 20px;
+    }
+
+    .close {
+        color: #aaa;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+        line-height: 20px;
+    }
+
+    .close:hover {
+        color: #000;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        color: #333;
+        font-weight: 500;
+    }
+
+    .form-group input {
+        width: 100%;
+        padding: 10px 15px;
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+        font-size: 14px;
+        box-sizing: border-box;
+    }
+
+    .employee-info {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 6px;
+        margin-top: 15px;
+        display: none;
+    }
+
+    .employee-info.show {
+        display: block;
+    }
+
+    .employee-info p {
+        margin: 5px 0;
+        color: #333;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #00bcd4, #009688);
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        width: 100%;
+        margin-top: 10px;
+    }
+
+    .btn-primary:hover {
+        opacity: 0.9;
+    }
+
+    .btn-primary:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .sortable {
+        cursor: pointer;
+        user-select: none;
+        position: relative;
+    }
+
+    .sortable:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .sortable::after {
+        content: '⇅';
+        margin-left: 8px;
+        opacity: 0.5;
+    }
+
+    .sortable.asc::after {
+        content: '↑';
+        opacity: 1;
+    }
+
+    .sortable.desc::after {
+        content: '↓';
+        opacity: 1;
+    }
+
+    .pagination-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 20px;
+    }
+
+    .pagination {
+        display: flex;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        gap: 5px;
+    }
+
+    .pagination li {
+        display: inline-block;
+    }
+
+    .pagination button {
+        padding: 8px 12px;
+        border: 1px solid #ced4da;
+        background: white;
+        color: #333;
+        cursor: pointer;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+
+    .pagination button:hover:not(:disabled) {
+        background: #f0f0f0;
+    }
+
+    .pagination button.active {
+        background: linear-gradient(135deg, #00bcd4, #009688);
+        color: white;
+        border-color: #00bcd4;
+    }
+
+    .pagination button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .page-info {
+        color: #6c757d;
+        font-size: 14px;
+    }
+</style>
+
+<div class="permission-container">
+    <div class="permission-card">
+        <h2 class="card-title">
+            <i class="fas fa-user-shield"></i>
+            จัดการสิทธิ์การเข้าใช้งาน
+        </h2>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div class="search-box" style="margin-bottom: 0;">
+                <input type="text" id="searchInput" placeholder="ค้นหารหัสพนักงานหรือชื่อ..." oninput="debouncedSearch()">
+            </div>
+            <button onclick="showAddEmployeeModal()" style="padding: 10px 20px; background: linear-gradient(135deg, #00bcd4, #009688); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-user-plus"></i>
+                เพิ่มพนักงาน
+            </button>
+        </div>
+
+        <table class="user-table">
+            <thead>
+                <tr>
+                    <th class="sortable" onclick="toggleSort()">รหัสพนักงาน</th>
+                    <th>ชื่อ-นามสกุล</th>
+                    <th>แผนก</th>
+                    <th>ตำแหน่ง</th>
+                    <th>เข้าใช้งานระบบได้</th>
+                    <th>จัดการสิทธิ์ได้</th>
+                </tr>
+            </thead>
+            <tbody id="userTableBody">
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 40px; color: #6c757d;">
+                        <i class="fas fa-users" style="font-size: 48px; opacity: 0.3;"></i>
+                        <p>กำลังโหลดข้อมูล...</p>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="pagination-container" id="paginationContainer">
+            <div class="page-info" id="pageInfo"></div>
+            <ul class="pagination" id="pagination"></ul>
+        </div>
+    </div>
+</div>
+
+<!-- Modal เพิ่มพนักงาน -->
+<div id="addEmployeeModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-user-plus"></i> เพิ่มพนักงานเข้าระบบ</h3>
+            <span class="close" onclick="closeAddEmployeeModal()">&times;</span>
+        </div>
+        <div class="form-group">
+            <label for="empnoInput">รหัสพนักงาน</label>
+            <input type="text" id="empnoInput" placeholder="กรอกรหัสพนักงาน" oninput="checkEmployee()">
+        </div>
+        <div id="employeeInfo" class="employee-info">
+            <p><strong>ชื่อ-นามสกุล:</strong> <span id="empName"></span></p>
+            <p><strong>แผนก:</strong> <span id="empDept"></span></p>
+            <p><strong>ตำแหน่ง:</strong> <span id="empPos"></span></p>
+        </div>
+        <button id="addEmployeeBtn" class="btn-primary" onclick="addEmployee()" disabled>
+            เพิ่มพนักงาน
+        </button>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentPage = 1;
+        const pageSize = 10;
+        let searchTimeout = null;
+        let sortOrder = 'asc';
+        let totalRecords = 0;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadUsers(currentPage);
+            updateSortIcon();
+        });
+
+        function debouncedSearch() {
+            if (searchTimeout) {
+                clearTimeout(searchTimeout);
+            }
+            searchTimeout = setTimeout(() => {
+                searchUsers();
+            }, 500);
+        }
+
+        function toggleSort() {
+            sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+            updateSortIcon();
+            loadUsers(currentPage);
+        }
+
+        function updateSortIcon() {
+            const sortableHeader = document.querySelector('.sortable');
+            sortableHeader.classList.remove('asc', 'desc');
+            sortableHeader.classList.add(sortOrder);
+        }
+
+        async function loadUsers(page) {
+            try {
+                showLoader();
+                const search = document.getElementById('searchInput').value;
+                const response = await fetch(`${basePath}/Permission/GetUsers?page=${page}&pageSize=${pageSize}&search=${encodeURIComponent(search)}&sortOrder=${sortOrder}`);
+                const { success, data, total } = await response.json();
+
+                if (success) {
+                    totalRecords = total;
+                    currentPage = page;
+                    renderUsers(data);
+                    renderPagination();
+                } else {
+                    showNoData();
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+                showNoData();
+            } finally {
+                hideLoader();
+            }
+        }
+
+        function renderPagination() {
+            const totalPages = Math.ceil(totalRecords / pageSize);
+            const pageInfo = document.getElementById('pageInfo');
+            const pagination = document.getElementById('pagination');
+
+            if (totalPages <= 1) {
+                pageInfo.textContent = `แสดง ${totalRecords} รายการ`;
+                pagination.innerHTML = '';
+                return;
+            }
+
+            const startRecord = (currentPage - 1) * pageSize + 1;
+            const endRecord = Math.min(currentPage * pageSize, totalRecords);
+            pageInfo.textContent = `แสดง ${startRecord}-${endRecord} จาก ${totalRecords} รายการ`;
+
+            let paginationHTML = '';
+
+            // Previous button
+            paginationHTML += `<li><button onclick="loadUsers(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>‹ ก่อนหน้า</button></li>`;
+
+            // Page numbers
+            const maxVisiblePages = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+            if (endPage - startPage < maxVisiblePages - 1) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+
+            if (startPage > 1) {
+                paginationHTML += `<li><button onclick="loadUsers(1)">1</button></li>`;
+                if (startPage > 2) {
+                    paginationHTML += `<li><button disabled>...</button></li>`;
+                }
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                paginationHTML += `<li><button onclick="loadUsers(${i})" class="${i === currentPage ? 'active' : ''}">${i}</button></li>`;
+            }
+
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    paginationHTML += `<li><button disabled>...</button></li>`;
+                }
+                paginationHTML += `<li><button onclick="loadUsers(${totalPages})">${totalPages}</button></li>`;
+            }
+
+            // Next button
+            paginationHTML += `<li><button onclick="loadUsers(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>ถัดไป ›</button></li>`;
+
+            pagination.innerHTML = paginationHTML;
+        }
+
+        function renderUsers(users) {
+            const tbody = document.getElementById('userTableBody');
+            
+            if (!users || users.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 40px; color: #6c757d;">
+                            <i class="fas fa-inbox" style="font-size: 48px; opacity: 0.3;"></i>
+                            <p>ไม่พบข้อมูล</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = users.map(user => `
+                <tr>
+                    <td>${user.empno}</td>
+                    <td>${user.empnameeng}</td>
+                    <td>${user.departmentnameeng || '-'}</td>
+                    <td>${user.positionnameeng || '-'}</td>
+                    <td>
+                        <label class="switch">
+                            <input type="checkbox" ${user.hasSystemAccess ? 'checked' : ''} onchange="toggleSystemAccess('${user.empno}', this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                    </td>
+                    <td>
+                        <label class="switch">
+                            <input type="checkbox" ${user.canManagePermission ? 'checked' : ''} onchange="toggleManagePermission('${user.empno}', this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function showNoData() {
+            const tbody = document.getElementById('userTableBody');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 40px; color: #6c757d;">
+                        <i class="fas fa-exclamation-circle" style="font-size: 48px; opacity: 0.3;"></i>
+                        <p>เกิดข้อผิดพลาดในการโหลดข้อมูล</p>
+                    </td>
+                </tr>
+            `;
+        }
+
+        async function toggleSystemAccess(empno, hasAccess) {
+            try {
+                const response = await fetch(`${basePath}/Permission/UpdateSystemAccess`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username: empno, hasAccess: hasAccess })
+                });
+
+                const { success, message } = await response.json();
+
+                if (success) {
+                    Swal.fire({
+                        title: 'สำเร็จ',
+                        text: message,
+                        icon: 'success',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'ข้อผิดพลาด',
+                        text: message,
+                        icon: 'error',
+                        confirmButtonColor: '#00bcd4'
+                    });
+                    loadUsers(currentPage);
+                }
+            } catch (error) {
+                console.error('Error updating system access:', error);
+                Swal.fire({
+                    title: 'ข้อผิดพลาด',
+                    text: 'เกิดข้อผิดพลาดในการอัพเดทสิทธิ์',
+                    icon: 'error',
+                    confirmButtonColor: '#00bcd4'
+                });
+                loadUsers(currentPage);
+            }
+        }
+
+        async function toggleManagePermission(empno, hasAccess) {
+            try {
+                const response = await fetch(`${basePath}/Permission/UpdateManagePermission`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username: empno, hasAccess: hasAccess })
+                });
+
+                const { success, message } = await response.json();
+
+                if (success) {
+                    Swal.fire({
+                        title: 'สำเร็จ',
+                        text: message,
+                        icon: 'success',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'ข้อผิดพลาด',
+                        text: message,
+                        icon: 'error',
+                        confirmButtonColor: '#00bcd4'
+                    });
+                    loadUsers(currentPage);
+                }
+            } catch (error) {
+                console.error('Error updating manage permission:', error);
+                Swal.fire({
+                    title: 'ข้อผิดพลาด',
+                    text: 'เกิดข้อผิดพลาดในการอัพเดทสิทธิ์',
+                    icon: 'error',
+                    confirmButtonColor: '#00bcd4'
+                });
+                loadUsers(currentPage);
+            }
+        }
+
+        function searchUsers() {
+            currentPage = 1;
+            loadUsers(currentPage);
+        }
+
+        function showAddEmployeeModal() {
+            document.getElementById('addEmployeeModal').style.display = 'block';
+            document.getElementById('empnoInput').value = '';
+            document.getElementById('employeeInfo').classList.remove('show');
+            document.getElementById('addEmployeeBtn').disabled = true;
+        }
+
+        function closeAddEmployeeModal() {
+            document.getElementById('addEmployeeModal').style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('addEmployeeModal');
+            if (event.target == modal) {
+                closeAddEmployeeModal();
+            }
+        }
+
+        let checkTimeout = null;
+        let currentEmployeeData = null;
+
+        function checkEmployee() {
+            if (checkTimeout) {
+                clearTimeout(checkTimeout);
+            }
+
+            const empno = document.getElementById('empnoInput').value.trim();
+            
+            if (!empno) {
+                document.getElementById('employeeInfo').classList.remove('show');
+                document.getElementById('addEmployeeBtn').disabled = true;
+                return;
+            }
+
+            checkTimeout = setTimeout(async () => {
+                try {
+                    const response = await fetch(`${basePath}/Permission/CheckEmployee?empno=${encodeURIComponent(empno)}`);
+                    const { success, data, message, alreadyExists } = await response.json();
+
+                    if (success && data) {
+                        currentEmployeeData = data;
+                        document.getElementById('empName').textContent = data.empnameeng || '-';
+                        document.getElementById('empDept').textContent = data.departmentnameeng || '-';
+                        document.getElementById('empPos').textContent = data.positionnameeng || '-';
+                        document.getElementById('employeeInfo').classList.add('show');
+                        
+                        if (alreadyExists) {
+                            document.getElementById('addEmployeeBtn').disabled = true;
+                            Swal.fire({
+                                title: 'แจ้งเตือน',
+                                text: 'พนักงานคนนี้มีอยู่ในระบบแล้ว',
+                                icon: 'warning',
+                                confirmButtonColor: '#00bcd4'
+                            });
+                        } else {
+                            document.getElementById('addEmployeeBtn').disabled = false;
+                        }
+                    } else {
+                        document.getElementById('employeeInfo').classList.remove('show');
+                        document.getElementById('addEmployeeBtn').disabled = true;
+                        if (message) {
+                            Swal.fire({
+                                title: 'ไม่พบข้อมูล',
+                                text: message,
+                                icon: 'error',
+                                confirmButtonColor: '#00bcd4'
+                            });
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error checking employee:', error);
+                    document.getElementById('employeeInfo').classList.remove('show');
+                    document.getElementById('addEmployeeBtn').disabled = true;
+                }
+            }, 500);
+        }
+
+        async function addEmployee() {
+            if (!currentEmployeeData) return;
+
+            try {
+                const response = await fetch(`${basePath}/Permission/AddEmployee`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ empno: currentEmployeeData.empno })
+                });
+
+                const { success, message } = await response.json();
+
+                if (success) {
+                    Swal.fire({
+                        title: 'สำเร็จ',
+                        text: message,
+                        icon: 'success',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                    closeAddEmployeeModal();
+                    loadUsers(currentPage);
+                } else {
+                    Swal.fire({
+                        title: 'ข้อผิดพลาด',
+                        text: message,
+                        icon: 'error',
+                        confirmButtonColor: '#00bcd4'
+                    });
+                }
+            } catch (error) {
+                console.error('Error adding employee:', error);
+                Swal.fire({
+                    title: 'ข้อผิดพลาด',
+                    text: 'เกิดข้อผิดพลาดในการเพิ่มพนักงาน',
+                    icon: 'error',
+                    confirmButtonColor: '#00bcd4'
+                });
+            }
+        }
+    </script>
+}

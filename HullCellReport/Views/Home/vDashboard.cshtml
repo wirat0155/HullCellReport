@@ -1,0 +1,460 @@
+@{
+    ViewData["Title"] = "Dashboard";
+    Layout = "_LayoutDashboard";
+}
+
+<style>
+    .dashboard-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        padding: 24px;
+        margin-bottom: 24px;
+    }
+
+    .card-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #1a1a2e;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+    }
+
+        .card-title i {
+            color: #00bcd4;
+            margin-right: 10px;
+        }
+
+    .table-responsive {
+        overflow-x: auto;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+        .data-table thead {
+            background: linear-gradient(135deg, #00bcd4, #009688);
+            color: white;
+        }
+
+        .data-table th {
+            padding: 14px 16px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+
+            .data-table th:first-child {
+                text-align: left;
+            }
+
+            .data-table th:nth-child(2),
+            .data-table th:nth-child(3) {
+                text-align: left;
+            }
+
+        .data-table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 14px;
+            text-align: center;
+        }
+
+            .data-table td:first-child {
+                text-align: left;
+                font-size: 11px;
+                color: #9e9e9e;
+                font-family: 'Courier New', monospace;
+                max-width: 120px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .data-table td:nth-child(2) {
+                text-align: left;
+                font-weight: 600;
+                color: #1a1a2e;
+            }
+
+            .data-table td:nth-child(3) {
+                text-align: left;
+            }
+
+        .data-table tbody tr {
+            transition: background-color 0.2s;
+        }
+
+            .data-table tbody tr:hover {
+                background-color: #f5f5f5;
+            }
+
+    .status-badge {
+        display: inline-block;
+        padding: 5px 14px;
+        border-radius: 14px;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .status-open {
+        background-color: #d4edda;
+        color: #155724;
+        box-shadow: 0 2px 4px rgba(21, 87, 36, 0.2);
+    }
+
+    .status-close {
+        background-color: #f8d7da;
+        color: #721c24;
+        box-shadow: 0 2px 4px rgba(114, 28, 36, 0.2);
+    }
+
+    .status-complete {
+        background-color: #d4edda;
+        color: #155724;
+    }
+
+    .status-draft {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+
+    .pagination-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 20px;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .pagination {
+        display: flex;
+        gap: 5px;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+        .pagination li {
+            display: inline-block;
+        }
+
+        .pagination a,
+        .pagination span {
+            display: block;
+            padding: 8px 12px;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            color: #00bcd4;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .pagination a:hover {
+            background-color: #00bcd4;
+            color: white;
+            border-color: #00bcd4;
+        }
+
+        .pagination .active span {
+            background-color: #00bcd4;
+            color: white;
+            border-color: #00bcd4;
+        }
+
+        .pagination .disabled span {
+            color: #6c757d;
+            cursor: not-allowed;
+        }
+
+    .page-info {
+        color: #6c757d;
+        font-size: 14px;
+    }
+
+    .no-data {
+        text-align: center;
+        padding: 40px;
+        color: #6c757d;
+    }
+
+        .no-data i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+    .filter-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .filter-row {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        align-items: end;
+    }
+
+    .filter-group {
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .filter-label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 6px;
+    }
+
+    .filter-input,
+    .filter-select {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: border-color 0.2s;
+    }
+
+        .filter-input:focus,
+        .filter-select:focus {
+            outline: none;
+            border-color: #00bcd4;
+            box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.1);
+        }
+
+    .filter-btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-apply {
+        background: linear-gradient(135deg, #00bcd4, #009688);
+        color: white;
+    }
+
+        .btn-apply:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 188, 212, 0.3);
+        }
+
+    .btn-reset {
+        background: #6c757d;
+        color: white;
+    }
+
+        .btn-reset:hover {
+            background: #5a6268;
+        }
+
+    .quick-filter {
+        display: flex;
+        gap: 8px;
+        margin-top: 10px;
+    }
+
+    .quick-filter-btn {
+        padding: 6px 12px;
+        border: 1px solid #00bcd4;
+        background: white;
+        color: #00bcd4;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+        .quick-filter-btn:hover,
+        .quick-filter-btn.active {
+            background: #00bcd4;
+            color: white;
+        }
+
+    .btn-edit {
+        padding: 6px 12px;
+        background: linear-gradient(135deg, #ff9800, #ff5722);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+        .btn-edit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+        }
+
+    .btn-delete {
+        padding: 6px 12px;
+        background: linear-gradient(135deg, #f44336, #d32f2f);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        margin-left: 5px;
+    }
+
+        .btn-delete:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
+        }
+
+    .action-buttons {
+        display: flex;
+        gap: 5px;
+        justify-content: center;
+    }
+
+    .btn-view {
+        padding: 6px 12px;
+        background: linear-gradient(135deg, #2196F3, #1976D2);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+        .btn-view:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+        }
+
+    .sort-icon {
+        cursor: pointer;
+        margin-left: 5px;
+        opacity: 0.5;
+        transition: opacity 0.2s;
+    }
+
+        .sort-icon:hover {
+            opacity: 1;
+        }
+
+        .sort-icon.active {
+            opacity: 1;
+            color: #ffd700;
+        }
+</style>
+
+<div class="container-fluid py-4">
+    <div class="dashboard-card">
+        <h2 class="card-title">
+            <i class="fas fa-flask-vial"></i>
+            รายการวิเคราะห์ Hull Cell
+        </h2>
+
+        <div class="filter-section">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label class="filter-label">ช่วงเวลา</label>
+                    <select class="filter-select" id="dateRangeSelect" onchange="handleQuickDateRange(this.value)">
+                        <option value="">กำหนดเอง</option>
+                        <option value="today">วันนี้</option>
+                        <option value="week">1 สัปดาห์ล่าสุด</option>
+                        <option value="month">1 เดือนล่าสุด</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">วันที่เริ่มต้น</label>
+                    <input type="date" class="filter-input" id="startDate" />
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">วันที่สิ้นสุด</label>
+                    <input type="date" class="filter-input" id="endDate" />
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">สถานะ</label>
+                    <select class="filter-select" id="statusFilter">
+                        <option value="">ทั้งหมด</option>
+                        <option value="C">Complete</option>
+                        <option value="D">Draft</option>
+                    </select>
+                </div>
+                <div class="filter-group" style="flex: 0;">
+                    <button class="filter-btn btn-apply" onclick="applyFilters()">
+                        <i class="fas fa-search"></i> ค้นหา
+                    </button>
+                </div>
+                <div class="filter-group" style="flex: 0;">
+                    <button class="filter-btn btn-reset" onclick="resetFilters()">
+                        <i class="fas fa-redo"></i> รีเซ็ต
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>
+                            วันที่
+                            <i class="fas fa-sort sort-icon" onclick="toggleSort('date')" id="sortIconDate"></i>
+                        </th>
+                        <th>ผู้ลงข้อมูล</th>
+                        <th>208N</th>
+                        <th>208T</th>
+                        <th>208A</th>
+                        <th>208B</th>
+                        <th>สถานะ</th>
+                        <th>จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <!-- Data will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+
+        <div id="noDataMessage" class="no-data" style="display: none;">
+            <i class="fas fa-inbox"></i>
+            <p>ไม่มีข้อมูล</p>
+        </div>
+
+        <div class="pagination-container" id="paginationContainer" style="display: none;">
+            <div class="page-info" id="pageInfo"></div>
+            <ul class="pagination" id="pagination"></ul>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/Home/vDashboard.js" asp-append-version="true"></script>
+}

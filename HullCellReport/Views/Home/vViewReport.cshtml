@@ -1,0 +1,526 @@
+@{
+    ViewData["Title"] = "View Report";
+    Layout = "_LayoutDashboard";
+}
+
+<style>
+    .report-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .report-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        padding: 30px;
+        margin-bottom: 20px;
+    }
+
+    .top-buttons {
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        display: flex;
+        gap: 15px;
+        margin-bottom: 30px;
+        justify-content: flex-end;
+        background: white;
+        padding: 20px 30px;
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+        backdrop-filter: blur(10px);
+        transition: box-shadow 0.3s ease;
+    }
+
+        .top-buttons:hover {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .top-buttons button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+    .btn-back {
+        background: #6c757d;
+        color: white;
+    }
+
+        .btn-back:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+
+    section {
+        margin-bottom: 30px;
+    }
+
+    h2 {
+        color: #1a1a2e;
+        font-size: 20px;
+        font-weight: 700;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 3px solid #00bcd4;
+    }
+
+    h3 {
+        color: #495057;
+        font-size: 16px;
+        font-weight: 600;
+        margin: 20px 0 15px 0;
+    }
+
+    label {
+        display: inline-block;
+        color: #495057;
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="date"],
+    input[type="time"],
+    textarea {
+        padding: 8px 12px;
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+        font-size: 14px;
+        background: #f8f9fa;
+        color: #495057;
+        pointer-events: none;
+    }
+
+    input[type="checkbox"],
+    input[type="radio"] {
+        pointer-events: none;
+    }
+
+    .note {
+        color: #6c757d;
+        font-size: 12px;
+        font-style: italic;
+        margin-left: 10px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+    }
+
+    th, td {
+        padding: 12px;
+        text-align: left;
+        border: 1px solid #dee2e6;
+    }
+
+    th {
+        background: linear-gradient(135deg, #00bcd4, #009688);
+        color: white;
+        font-weight: 600;
+        font-size: 14px;
+    }
+
+    td {
+        background: white;
+    }
+
+    table input[type="text"],
+    table input[type="number"],
+    table textarea {
+        width: 100%;
+        border: 1px solid #dee2e6;
+        padding: 6px 10px;
+    }
+
+    table textarea {
+        min-height: 60px;
+        resize: none;
+    }
+
+    .form-row {
+        margin-bottom: 15px;
+    }
+
+    .view-mode-badge {
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        display: inline-block;
+        padding: 12px 24px;
+        background: linear-gradient(135deg, #2196F3, #1976D2);
+        color: white;
+        border-radius: 25px;
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+        backdrop-filter: blur(10px);
+        transition: all 0.3s ease;
+    }
+
+        .view-mode-badge:hover {
+            box-shadow: 0 6px 16px rgba(33, 150, 243, 0.4);
+            transform: translateY(-2px);
+        }
+
+    .badge-container {
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        background: white;
+        padding: 15px 0;
+        margin-bottom: 20px;
+        border-radius: 12px;
+    }
+</style>
+
+<div class="report-container">
+    <div class="report-card">
+        <div class="badge-container">
+            <div class="view-mode-badge">
+                <i class="fas fa-eye"></i> โหมดดูข้อมูล (Read-Only)
+            </div>
+        </div>
+
+        <form>
+        <!-- SECTION 1 : Hull Cell Report -->
+        <section id="hullcell">
+            <h2>Hull Cell Report</h2>
+            <div class="form-row d-flex align-items-center">
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="txt_line" id="line-zn-ni1" value="Zn-Ni1">
+                    <label class="form-check-label" for="line-zn-ni1">
+                        Zn-Ni1
+                    </label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="txt_line" id="line-zn-ni2" value="Zn-Ni2">
+                    <label class="form-check-label" for="line-zn-ni2">
+                        Zn-Ni2
+                    </label>
+                </div>
+                <span class="ms-3">
+                    Analysis by:
+                    <input type="text" id="analysis-by" name="txt_analysis_by" class="form-control d-inline-block ms-2" style="width: 200px;">
+                    <span id="employee-name" style="margin-left: 10px; color: #00bcd4; font-weight: 600;"></span>
+                </span>
+            </div>
+
+            <div class="form-row">
+                <label style="width:150px;">Sampling Date:</label>
+                <input type="date" id="sampling-date" name="txt_sampling_date">
+            </div>
+            <div class="form-row">
+                <label style="width:150px;">Time:</label>
+                <input type="time" id="time" name="txt_time">
+            </div>
+
+            <h3>Composition Analysis</h3>
+            <div class="form-row">
+                <label style="width:150px;">Zinc Metal:</label>
+                <input type="number" id="zinc-metal" name="txt_zinc_metal" step="0.01" style="width: 150px;">
+                <span class="note">(7.0–9.5 g/L)</span>
+            </div>
+            <div class="form-row">
+                <label style="width:150px;">Caustic Soda:</label>
+                <input type="number" id="caustic-soda" name="txt_caustic_soda" step="0.01" style="width: 150px;">
+                <span class="note">(105–125 g/L)</span>
+            </div>
+            <div class="form-row">
+                <label style="width:150px;">Sodium Carbonate:</label>
+                <input type="number" id="sodium-carbonate" name="txt_sodium_carbonate" step="0.01" style="width: 150px;">
+                <span class="note">(&lt;120 g/L)</span>
+            </div>
+            <div class="form-row">
+                <label style="width:150px;">Nickel:</label>
+                <input type="number" id="nickel" name="txt_nickel" step="0.01" style="width: 150px;">
+                <span class="note">(1.4–2.0 g/L)</span>
+            </div>
+            <div class="form-row">
+                <label style="width:150px;">US-208T:</label>
+                <input type="number" id="us-208t" name="txt_us_208t" style="width: 150px;">
+                <span class="note">(120–160 g/L)</span>
+            </div>
+            <div class="form-row">
+                <label style="width:150px;">Ratio Zn/Ni:</label>
+                <input type="text" id="ratio" name="txt_ratio" style="width: 150px;">
+            </div>
+        </section>
+
+        <!-- SECTION 2 : Parameter Table -->
+        <section id="parameter">
+            <h2>Parameter Table</h2>
+            <table id="parameter-table">
+                <thead>
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Start</th>
+                        <th>Finish</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Temp (°C)</td>
+                        <td><input type="number" step="0.01" name="txt_temp_start"></td>
+                        <td><input type="number" step="0.01" name="txt_temp_finish"></td>
+                    </tr>
+                    <tr>
+                        <td>Voltage (V)</td>
+                        <td><input type="number" step="0.01" name="txt_voltage_start"></td>
+                        <td><input type="number" step="0.01" name="txt_voltage_finish"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- SECTION 3 : X-ray Program -->
+        <section id="xray">
+            <h2>Program X-ray No.13 Zn/Ni/En/Fe</h2>
+            <table id="xray-table">
+                <thead>
+                    <tr>
+                        <th rowspan="2">Point</th>
+                        <th rowspan="2">A/dm²</th>
+                        <th colspan="2">Thickness (µm)</th>
+                        <th rowspan="2">% Zn (85.0–90.0)</th>
+                        <th rowspan="2">% Ni (10.0–15.0)</th>
+                    </tr>
+                    <tr>
+                        <th>Spec</th>
+                        <th>Result</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1 cm</td>
+                        <td>16.9</td>
+                        <td>12–15</td>
+                        <td><input type="number" step="0.01" name="txt_result_1cm"></td>
+                        <td><input type="number" step="0.01" name="txt_zn_1cm"></td>
+                        <td><input type="number" step="0.01" name="txt_ni_1cm"></td>
+                    </tr>
+                    <tr>
+                        <td>3 cm</td>
+                        <td>9.2</td>
+                        <td>8–11</td>
+                        <td><input type="number" step="0.01" name="txt_result_3cm"></td>
+                        <td><input type="number" step="0.01" name="txt_zn_3cm"></td>
+                        <td><input type="number" step="0.01" name="txt_ni_3cm"></td>
+                    </tr>
+                    <tr>
+                        <td>5 cm</td>
+                        <td>5.6</td>
+                        <td>5–8</td>
+                        <td><input type="number" step="0.01" name="txt_result_5cm"></td>
+                        <td><input type="number" step="0.01" name="txt_zn_5cm"></td>
+                        <td><input type="number" step="0.01" name="txt_ni_5cm"></td>
+                    </tr>
+                    <tr>
+                        <td>7 cm</td>
+                        <td>3.2</td>
+                        <td>3–6</td>
+                        <td><input type="number" step="0.01" name="txt_result_7cm"></td>
+                        <td><input type="number" step="0.01" name="txt_zn_7cm"></td>
+                        <td><input type="number" step="0.01" name="txt_ni_7cm"></td>
+                    </tr>
+                    <tr>
+                        <td>9 cm</td>
+                        <td>2.0</td>
+                        <td>2–4</td>
+                        <td><input type="number" step="0.01" name="txt_result_9cm"></td>
+                        <td><input type="number" step="0.01" name="txt_zn_9cm"></td>
+                        <td><input type="number" step="0.01" name="txt_ni_9cm"></td>
+                    </tr>
+                    <tr>
+                        <td>19 cm</td>
+                        <td>0.5</td>
+                        <td>0.5</td>
+                        <td><input type="number" step="0.01" name="txt_result_19cm"></td>
+                        <td><input type="number" step="0.01" name="txt_zn_19cm"></td>
+                        <td><input type="number" step="0.01" name="txt_ni_19cm"></td>
+                    </tr>
+                    <tr style="background: #f8f9fa;">
+                        <td colspan="3"><strong>Max.</strong></td>
+                        <td><input type="number" step="0.01" name="txt_max_result"></td>
+                        <td><input type="number" step="0.01" name="txt_max_zn"></td>
+                        <td><input type="number" step="0.01" name="txt_max_ni"></td>
+                    </tr>
+                    <tr style="background: #f8f9fa;">
+                        <td colspan="3"><strong>Min.</strong></td>
+                        <td><input type="number" step="0.01" name="txt_min_result"></td>
+                        <td><input type="number" step="0.01" name="txt_min_zn"></td>
+                        <td><input type="number" step="0.01" name="txt_min_ni"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- SECTION 4 : Zn Conc Table -->
+        <section id="znconc">
+            <h2>Zn Conc. Table</h2>
+            <table id="zn-table">
+                <thead>
+                    <tr>
+                        <th>Zn Conc (g/L)</th>
+                        <th>ความหนา 1 cm</th>
+                        <th>% Zn</th>
+                        <th>% Ni</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>7.33–7.59</td>
+                        <td>13–14</td>
+                        <td>85–86%</td>
+                        <td>14–15%</td>
+                    </tr>
+                    <tr>
+                        <td>7.72–7.86</td>
+                        <td>14–15</td>
+                        <td>85–86%</td>
+                        <td>14–15%</td>
+                    </tr>
+                    <tr>
+                        <td>7.99–8.18</td>
+                        <td>15–16</td>
+                        <td>85–86%</td>
+                        <td>14–15%</td>
+                    </tr>
+                    <tr>
+                        <td>&gt; 8.30</td>
+                        <td>16–17</td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- SECTION 5 : Adjustment Table -->
+        <section id="adjustment">
+            <h2>Adjustment Table</h2>
+            <table id="adjustment-table">
+                <thead>
+                    <tr>
+                        <th>Chem.</th>
+                        <th>แช่ซิงค์</th>
+                        <th>ปรับเติม</th>
+                        <th>Auto feed</th>
+                        <th>Remark</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Zn</strong></td>
+                        <td><textarea name="txt_batch_zn"></textarea></td>
+                        <td><textarea name="txt_adjust_zn"></textarea></td>
+                        <td><textarea name="txt_auto_feed_zn"></textarea></td>
+                        <td><textarea name="txt_remark_zn"></textarea></td>
+                    </tr>
+                    <tr>
+                        <td><strong>NaOH</strong></td>
+                        <td><textarea name="txt_batch_naoh"></textarea></td>
+                        <td><textarea name="txt_adjust_naoh"></textarea></td>
+                        <td><textarea name="txt_auto_feed_naoh"></textarea></td>
+                        <td><textarea name="txt_remark_naoh"></textarea></td>
+                    </tr>
+                    <tr>
+                        <td><strong>208N</strong></td>
+                        <td><textarea name="txt_batch_208n"></textarea></td>
+                        <td><textarea name="txt_adjust_208n"></textarea></td>
+                        <td><textarea name="txt_auto_feed_208n"></textarea></td>
+                        <td><textarea name="txt_remark_208n"></textarea></td>
+                    </tr>
+                    <tr>
+                        <td><strong>208T</strong></td>
+                        <td><textarea name="txt_batch_208t"></textarea></td>
+                        <td><textarea name="txt_adjust_208t"></textarea></td>
+                        <td><textarea name="txt_auto_feed_208t"></textarea></td>
+                        <td><textarea name="txt_remark_208t"></textarea></td>
+                    </tr>
+                    <tr>
+                        <td><strong>208A</strong></td>
+                        <td><textarea name="txt_batch_208a"></textarea></td>
+                        <td><textarea name="txt_adjust_208a"></textarea></td>
+                        <td><textarea name="txt_auto_feed_208a"></textarea></td>
+                        <td><textarea name="txt_remark_208a"></textarea></td>
+                    </tr>
+                    <tr>
+                        <td><strong>208B</strong></td>
+                        <td><textarea name="txt_batch_208b"></textarea></td>
+                        <td><textarea name="txt_adjust_208b"></textarea></td>
+                        <td><textarea name="txt_auto_feed_208b"></textarea></td>
+                        <td><textarea name="txt_remark_208b"></textarea></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- SECTION 6 : Uploaded Images -->
+        <section id="images">
+            <h2>Uploaded Images</h2>
+            <div id="uploaded-images-list" style="display: flex; flex-wrap: wrap; gap: 15px; margin-top: 15px;">
+                <!-- Uploaded images will be displayed here -->
+            </div>
+            <p id="no-images-message" style="color: #6c757d; font-style: italic; display: none;">ไม่มีภาพที่อัพโหลด</p>
+        </section>
+        </form>
+    </div>
+</div>
+
+<style>
+    .image-item {
+        position: relative;
+        width: 200px;
+        height: 200px;
+        border: 2px solid #dee2e6;
+        border-radius: 8px;
+        overflow: hidden;
+        background: #f8f9fa;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+
+        .image-item:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .image-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+</style>
+
+@section Scripts {
+    <script src="~/js/Home/vCreateReport_load.js" asp-append-version="true"></script>
+    <script>
+        // Click to view full image
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.image-item img')) {
+                const img = e.target;
+                Swal.fire({
+                    imageUrl: img.src,
+                    imageAlt: 'Report Image',
+                    showCloseButton: true,
+                    showConfirmButton: false,
+                    width: '80%'
+                });
+            }
+        });
+    </script>
+}
