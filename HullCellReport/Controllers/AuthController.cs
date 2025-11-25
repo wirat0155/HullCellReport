@@ -24,6 +24,11 @@ namespace HullCellReport.Controllers
         }
         public IActionResult vLogin()
         {
+            // Prevent caching of login page
+            Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+            Response.Headers["Pragma"] = "no-cache";
+            Response.Headers["Expires"] = "0";
+            
             return View();
         }
 
@@ -107,7 +112,13 @@ namespace HullCellReport.Controllers
                 Path = "/", // Set cookie available across the entire site
                 Expires = DateTime.UtcNow.AddDays(-1)
             });
-            return RedirectToAction(nameof(vLogin));
+            
+            // Prevent caching
+            Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+            Response.Headers["Pragma"] = "no-cache";
+            Response.Headers["Expires"] = "0";
+            
+            return Redirect("/Auth/vLogin");
         }
     }
 }

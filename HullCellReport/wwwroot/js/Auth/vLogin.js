@@ -1,4 +1,14 @@
-﻿// Hide chemical loader on page load
+﻿// Prevent back button after logout
+(function () {
+    if (window.history && window.history.pushState) {
+        window.history.pushState(null, null, window.location.href);
+        window.addEventListener('popstate', function () {
+            window.history.pushState(null, null, window.location.href);
+        });
+    }
+})();
+
+// Hide chemical loader on page load
 window.addEventListener('load', function () {
     setTimeout(function () {
         const loader = document.getElementById('chemicalLoader');
