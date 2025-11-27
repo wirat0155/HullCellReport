@@ -11,6 +11,9 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using JWTRegen.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
+using SixLabors.ImageSharp.Formats.Jpeg;
 
 namespace HullCellReport.Controllers
 {
@@ -127,16 +130,13 @@ namespace HullCellReport.Controllers
                                 continue; // Skip non-image files
                             }
 
-                            // Generate unique filename with UUID
+                            // Generate unique filename with UUID (always save as .jpg after compression)
                             var imageUuid = Guid.NewGuid().ToString();
-                            var fileName = $"{imageUuid}{extension}";
+                            var fileName = $"{imageUuid}.jpg";
                             var filePath = Path.Combine(imagesPath, fileName);
 
-                            // Save file
-                            using (var stream = new FileStream(filePath, FileMode.Create))
-                            {
-                                await file.CopyToAsync(stream);
-                            }
+                            // Compress and save image
+                            await CompressAndSaveImage(file, filePath);
 
                             uploadedImageNames.Add(fileName);
                         }
@@ -412,6 +412,37 @@ namespace HullCellReport.Controllers
             };
 
             return result;
+        }
+
+        private async Task CompressAndSaveImage(Microsoft.AspNetCore.Http.IFormFile file, string outputPath)
+        {
+            using (var imageStream = file.OpenReadStream())
+            using (var image = await Image.LoadAsync(imageStream))
+            {
+                // Resize to smaller size (max width/height: 1280px)
+                int maxSize = 1280;
+                if (image.Width > maxSize || image.Height > maxSize)
+                {
+                    if (image.Width > image.Height)
+                    {
+                        int newHeight = (int)((float)image.Height / image.Width * maxSize);
+                        image.Mutate(x => x.Resize(maxSize, newHeight));
+                    }
+                    else
+                    {
+                        int newWidth = (int)((float)image.Width / image.Height * maxSize);
+                        image.Mutate(x => x.Resize(newWidth, maxSize));
+                    }
+                }
+
+                // Save as JPEG with quality 70 for smaller file size
+                var encoder = new JpegEncoder
+                {
+                    Quality = 70
+                };
+
+                await image.SaveAsync(outputPath, encoder);
+            }
         }
 
         private async Task<bool> ValCreateReport(CreateReportFM form){

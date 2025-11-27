@@ -118,7 +118,7 @@ namespace HullCellReport.Controllers
             Response.Headers["Pragma"] = "no-cache";
             Response.Headers["Expires"] = "0";
             
-            return Redirect("/Auth/vLogin");
+            return RedirectToAction("vLogin", "Auth");
         }
     }
 }

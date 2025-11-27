@@ -31,8 +31,11 @@ async function Save(event) {
 
     // 5. ส่งข้อมูลไป Backend
     try {
-        // แสดง Loader (ถ้ามีฟังก์ชันนี้)
-        // showLoader(); 
+        // แสดง Loader
+        const loader = document.getElementById('chemicalLoader');
+        if (loader) {
+            loader.classList.remove('hidden');
+        }
 
         const response = await fetch(`${basePath}/Home/CreateReport`, {
             method: 'POST',
@@ -79,10 +82,19 @@ async function Save(event) {
     } catch (error) {
         // จัดการ Error ทาง Network หรือ Exception อื่นๆ
         console.error(error);
-        alert(`Exception: ${error.message}`);
+        Swal.fire({
+            title: 'เกิดข้อผิดพลาด',
+            text: `Exception: ${error.message}`,
+            icon: 'error',
+            confirmButtonColor: '#f44336',
+            confirmButtonText: 'ตกลง'
+        });
     } finally {
         // ซ่อน Loader เสมอไม่ว่าจะสำเร็จหรือล้มเหลว
-        if (typeof hideLoader === 'function') hideLoader();
+        const loader = document.getElementById('chemicalLoader');
+        if (loader) {
+            loader.classList.add('hidden');
+        }
     }
 }
 

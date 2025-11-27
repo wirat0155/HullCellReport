@@ -86,6 +86,13 @@ namespace HullCellReport
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            // Support for subfolder deployment (e.g., /HullCellReport)
+            var pathBase = Configuration["PathBase"];
+            if (!string.IsNullOrEmpty(pathBase))
+            {
+                app.UsePathBase(pathBase);
+            }
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -111,7 +118,8 @@ namespace HullCellReport
                         {
                             context.Response.Cookies.Delete("hullcellreport_jwt");
                         }
-                        context.Response.Redirect("/Auth/vLogin");
+                        var pathBase = Configuration["PathBase"] ?? "";
+                        context.Response.Redirect($"{pathBase}/Auth/vLogin");
                     }
                     else
                     {
