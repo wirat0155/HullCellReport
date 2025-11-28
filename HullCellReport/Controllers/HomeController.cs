@@ -136,7 +136,7 @@ namespace HullCellReport.Controllers
                             var filePath = Path.Combine(imagesPath, fileName);
 
                             // Compress and save image
-                            await CompressAndSaveImage(file, filePath);
+                            //await CompressAndSaveImage(file, filePath);
 
                             uploadedImageNames.Add(fileName);
                         }
