@@ -122,6 +122,16 @@ function renderTable(data, page) {
             `;
         }
 
+        // Export button - only show for Complete status
+        let exportButton = '';
+        if (item.status === 'C') {
+            exportButton = `
+                <button class="btn-export" onclick="exportPDF('${item.id}')">
+                    <i class="fas fa-file-pdf"></i> Export
+                </button>
+            `;
+        }
+
         const row = `
             <tr>
                 <td title="${item.id}">${item.id}</td>
@@ -137,6 +147,9 @@ function renderTable(data, page) {
                 <td><span class="status-badge ${statusClass}">${statusText}</span></td>
                 <td>
                     ${actionButtons}
+                </td>
+                <td>
+                    ${exportButton}
                 </td>
             </tr>
         `;
@@ -390,4 +403,9 @@ async function deleteReport(uuid) {
     } finally {
         hideLoader();
     }
+}
+
+// Export PDF function
+function exportPDF(uuid) {
+    window.open(`${basePath}/Home/ExportPDF?uuid=${uuid}`, '_blank');
 }

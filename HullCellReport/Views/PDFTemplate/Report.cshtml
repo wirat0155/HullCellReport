@@ -1,0 +1,429 @@
+@model HullCellReport.Models.CreateReportFM
+@{
+    DateTime? samplingDate = null;
+    if (!string.IsNullOrEmpty(Model.txt_sampling_date))
+    {
+        DateTime.TryParse(Model.txt_sampling_date, out var date);
+        samplingDate = date;
+    }
+
+    TimeSpan? time = null;
+    if (!string.IsNullOrEmpty(Model.txt_time))
+    {
+        TimeSpan.TryParse(Model.txt_time, out var t);
+        time = t;
+    }
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Hull Cell Report</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            padding: 10px;
+            font-size: 16px;
+        }
+        
+        .container {
+            width: 100%;
+        }
+        
+        .header {
+            border-bottom: 2px solid black;
+            padding-bottom: 5px;
+            margin-bottom: 5px;
+        }
+        
+        .header-top {
+            display: table;
+            width: 100%;
+            margin-bottom: 3px;
+        }
+        
+        .header-left {
+            display: table-cell;
+            width: 25%;
+            font-size: 16px;
+            vertical-align: middle;
+        }
+        
+        .header-center {
+            display: table-cell;
+            width: 50%;
+            text-align: center;
+            vertical-align: middle;
+        }
+        
+        .header-center h1 {
+            font-size: 24px;
+            margin: 0;
+        }
+        
+        .header-right {
+            display: table-cell;
+            width: 25%;
+            text-align: right;
+            vertical-align: middle;
+        }
+        
+        .stamps {
+            display: table;
+        }
+        
+        .stamp {
+            display: table-cell;
+            width: 90px;
+            height: 90px;
+            border: 2px solid #333;
+            text-align: center;    /* ข้อความอยู่กลางแนวนอน */
+            vertical-align: top;   /* ข้อความอยู่ด้านบน */
+            padding-top: 5px;      /* กำหนดระยะห่างจากขอบบน */
+            font-size: 16px;
+        }
+        
+        .line-info {
+            font-size: 16px;
+            text-align: center;
+        }
+        
+        .sampling-date {
+            border-bottom: 1px solid black;
+            padding: 5px 0;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+        
+        .main-content {
+            display: table;
+            width: 100%;
+        }
+        
+        .left-section {
+            display: table-cell;
+            width: 50%;
+            vertical-align: top;
+            padding-right: 5px;
+        }
+        
+        .right-section {
+            display: table-cell;
+            width: 50%;
+            vertical-align: top;
+        }
+        
+        .composition h3 {
+            font-size: 16px;
+            background: #d0d0d0;
+            padding: 3px;
+            border: 1px solid black;
+            margin-bottom: 3px;
+            text-align: center;
+        }
+        
+        .composition-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+        
+        .composition-table td {
+            border: 1px solid black;
+            padding: 3px;
+        }
+        
+        .image-section {
+            margin-top: 5px;
+            text-align: center;
+        }
+        
+        .image-section img {
+            max-width: 100%;
+            max-height: 600px;
+            object-fit: contain;
+            border: 1px solid #ccc;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+        
+        th, td {
+            border: 1px solid black;
+            padding: 3px;
+            text-align: center;
+        }
+        
+        th {
+            background: #d0d0d0;
+            font-weight: bold;
+        }
+        
+        .non-block {
+            background: #d0d0d0;
+        }
+        
+        .footer {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            text-align: right;
+            font-size: 16px;
+            color: #666;
+        }
+        
+        html, body {
+            height: 100%;
+            position: relative;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-top">
+                <div class="header-left">
+                    <img src="/images/system/report_logo.jpg" alt="Logo" style="max-width: 120px; max-height: 80px; display: block;" />
+                    <div style="font-size: 16px; margin-top: 5px;">QA-PT / Retention : 1 Years</div>
+                </div>
+                <div class="header-center">
+                    <h1>Hull Cell Report</h1>
+                </div>
+                <div class="header-right">
+                    <div class="stamps">
+                        <div class="stamp">Approved</div>
+                        <div class="stamp">Checked</div>
+                        <div class="stamp">Analysed</div>
+                    </div>
+                </div>
+            </div>
+            <div class="line-info">
+                <strong>Line:</strong> @Model.txt_line
+            </div>
+        </div>
+        
+        <div class="sampling-date">
+            <strong>Sampling Date:</strong> @(samplingDate?.ToString("dd/MM/yyyy") ?? Model.txt_sampling_date) 
+            <strong>Time:</strong> @(time?.ToString(@"hh\:mm") ?? Model.txt_time)
+            <strong style="margin-left: 20px;">Analysis By:</strong> @Model.txt_analysis_by
+        </div>
+        
+        <div class="main-content">
+            <div class="left-section">
+                <div class="composition">
+                    <h3>Composition Analysis</h3>
+                    <table class="composition-table">
+                        <tr>
+                            <td>Zinc metal<br>(7.0-9.5 g/L)</td>
+                            <td>@Model.txt_zinc_metal g/L</td>
+                            <td>Sodium Carbonate<br>(< 120 g/L)</td>
+                            <td>@Model.txt_sodium_carbonate g/L</td>
+                        </tr>
+                        <tr>
+                            <td>Caustic Soda<br>(105-125 g/L)</td>
+                            <td>@Model.txt_caustic_soda g/L</td>
+                            <td>US-208T<br>(120-160 g/L)</td>
+                            <td>@Model.txt_us_208t g/L</td>
+                        </tr>
+                        <tr>
+                            <td>Nickel<br>(1.4-2.0 g/L)</td>
+                            <td>@Model.txt_nickel g/L</td>
+                            <td>Ratio (Zn/Ni)</td>
+                            <td>@Model.txt_ratio</td>
+                        </tr>
+                    </table>
+                </div>
+                
+                @if (Model.txt_uploaded_images != null && Model.txt_uploaded_images.Count > 0)
+                {
+                    <div class="image-section">
+                        @foreach (var imageName in Model.txt_uploaded_images.Take(1))
+                        {
+                            <img src="/images/data_log/@imageName" alt="Hull Cell Image" />
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div style="margin-top: 5px; padding: 10px; border: 1px solid #ccc; text-align: center; font-size: 16px; color: #999;">
+                        ไม่มีภาพ
+                    </div>
+                }
+            </div>
+            
+            <div class="right-section">
+                <table>
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Start</th>
+                        <th>Finish</th>
+                    </tr>
+                    <tr>
+                        <td>Temp (°C)</td>
+                        <td>@Model.txt_temp_start</td>
+                        <td>@Model.txt_temp_finish</td>
+                    </tr>
+                    <tr>
+                        <td>Voltage (V)</td>
+                        <td>@Model.txt_voltage_start</td>
+                        <td>@Model.txt_voltage_finish</td>
+                    </tr>
+                </table>
+                
+                <table>
+                    <tr>
+                        <th colspan="6">X-ray Program</th>
+                    </tr>
+                    <tr>
+                        <th rowspan="2">Point</th>
+                        <th colspan="2">Thickness (μm)</th>
+                        <th rowspan="2">Result</th>
+                        <th rowspan="2">% Zn</th>
+                        <th rowspan="2">% Ni</th>
+                    </tr>
+                    <tr>
+                        <th>Spec</th>
+                        <th>Result</th>
+                    </tr>
+                    <tr>
+                        <td>1 cm</td>
+                        <td>12-15</td>
+                        <td>@Model.txt_result_1cm</td>
+                        <td>@Model.txt_result_1cm</td>
+                        <td>@Model.txt_zn_1cm</td>
+                        <td>@Model.txt_ni_1cm</td>
+                    </tr>
+                    <tr>
+                        <td>3 cm</td>
+                        <td>8-11</td>
+                        <td>@Model.txt_result_3cm</td>
+                        <td>@Model.txt_result_3cm</td>
+                        <td>@Model.txt_zn_3cm</td>
+                        <td>@Model.txt_ni_3cm</td>
+                    </tr>
+                    <tr>
+                        <td>5 cm</td>
+                        <td>5-8</td>
+                        <td>@Model.txt_result_5cm</td>
+                        <td>@Model.txt_result_5cm</td>
+                        <td>@Model.txt_zn_5cm</td>
+                        <td>@Model.txt_ni_5cm</td>
+                    </tr>
+                    <tr>
+                        <td>7 cm</td>
+                        <td>3-6</td>
+                        <td>@Model.txt_result_7cm</td>
+                        <td>@Model.txt_result_7cm</td>
+                        <td>@Model.txt_zn_7cm</td>
+                        <td>@Model.txt_ni_7cm</td>
+                    </tr>
+                    <tr>
+                        <td>9 cm</td>
+                        <td>2-4</td>
+                        <td>@Model.txt_result_9cm</td>
+                        <td>@Model.txt_result_9cm</td>
+                        <td>@Model.txt_zn_9cm</td>
+                        <td>@Model.txt_ni_9cm</td>
+                    </tr>
+                    <tr>
+                        <td>19 cm</td>
+                        <td>< 0.5</td>
+                        <td>@Model.txt_result_19cm</td>
+                        <td>@Model.txt_result_19cm</td>
+                        <td class="non-block"></td>
+                        <td class="non-block"></td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" rowspan="2">Check thickness</td>
+                        <td>Max</td>
+                        <td>@Model.txt_max_zn</td>
+                        <td>@Model.txt_max_ni</td>
+                    </tr>
+                    <tr>
+                        <td>Min</td>
+                        <td>@Model.txt_min_zn</td>
+                        <td>@Model.txt_min_ni</td>
+                    </tr>
+                </table>
+                
+                <table>
+                    <tr>
+                        <th colspan="5">Adjustment</th>
+                    </tr>
+                    <tr>
+                        <th>Chem</th>
+                        <th>Batch</th>
+                        <th>Adjust</th>
+                        <th>Auto Feed</th>
+                        <th>Remark</th>
+                    </tr>
+                    <tr>
+                        <td>Zn</td>
+                        <td>@Model.txt_batch_zn</td>
+                        <td>@Model.txt_adjust_zn</td>
+                        <td>@Model.txt_auto_feed_zn</td>
+                        <td>@Model.txt_remark_zn</td>
+                    </tr>
+                    <tr>
+                        <td>NaOH</td>
+                        <td>@Model.txt_batch_naoh</td>
+                        <td>@Model.txt_adjust_naoh</td>
+                        <td>@Model.txt_auto_feed_naoh</td>
+                        <td>@Model.txt_remark_naoh</td>
+                    </tr>
+                    <tr>
+                        <td>208N</td>
+                        <td>@Model.txt_batch_208n</td>
+                        <td>@Model.txt_adjust_208n</td>
+                        <td>@Model.txt_auto_feed_208n</td>
+                        <td>@Model.txt_remark_208n</td>
+                    </tr>
+                    <tr>
+                        <td>208T</td>
+                        <td>@Model.txt_batch_208t</td>
+                        <td>@Model.txt_adjust_208t</td>
+                        <td>@Model.txt_auto_feed_208t</td>
+                        <td>@Model.txt_remark_208t</td>
+                    </tr>
+                    <tr>
+                        <td>208A</td>
+                        <td>@Model.txt_batch_208a</td>
+                        <td>@Model.txt_adjust_208a</td>
+                        <td>@Model.txt_auto_feed_208a</td>
+                        <td>@Model.txt_remark_208a</td>
+                    </tr>
+                    <tr>
+                        <td>208B</td>
+                        <td>@Model.txt_batch_208b</td>
+                        <td>@Model.txt_adjust_208b</td>
+                        <td>@Model.txt_auto_feed_208b</td>
+                        <td>@Model.txt_remark_208b</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        
+        @if (!string.IsNullOrEmpty(Model.txt_remark))
+        {
+            <div style="margin-top: 5px; padding: 3px; border: 1px solid black; font-size: 8px;">
+                <strong>Remark:</strong> @Model.txt_remark
+            </div>
+        }
+        
+        <div class="footer">
+            Generated: @DateTime.Now.ToString("dd/MM/yyyy HH:mm")
+        </div>
+    </div>
+</body>
+</html>

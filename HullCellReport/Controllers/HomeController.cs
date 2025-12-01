@@ -14,6 +14,14 @@ using Microsoft.AspNetCore.Authorization;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
 using SixLabors.ImageSharp.Formats.Jpeg;
+using DinkToPdf;
+using DinkToPdf.Contracts;
+using Microsoft.AspNetCore.Mvc.ViewEngines;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using System.Net;
+using System.Runtime.InteropServices;
+using Microsoft.Extensions.Configuration;
 
 namespace HullCellReport.Controllers
 {
@@ -24,17 +32,23 @@ namespace HullCellReport.Controllers
         private readonly IWebHostEnvironment _env;
         private readonly IClaimsHelper _claimsHelper;
         private readonly Repositories.EmployeeRepository _employeeRepo;
+        private readonly IConverter _pdfConverter;
+        private readonly IConfiguration _configuration;
 
         public HomeController(
             ILogger<HomeController> logger, 
         IWebHostEnvironment env,
         JWTRegen.Interfaces.IClaimsHelper claimsHelper,
-        Repositories.EmployeeRepository employeeRepo)
+        Repositories.EmployeeRepository employeeRepo,
+        IConverter pdfConverter,
+        IConfiguration configuration)
         {
             _logger = logger;
             _env = env;
             _claimsHelper = claimsHelper;
             _employeeRepo = employeeRepo;
+            _pdfConverter = pdfConverter;
+            _configuration = configuration;
         }
 
         public IActionResult Index()
@@ -130,13 +144,16 @@ namespace HullCellReport.Controllers
                                 continue; // Skip non-image files
                             }
 
-                            // Generate unique filename with UUID (always save as .jpg after compression)
+                            // Generate unique filename with UUID
                             var imageUuid = Guid.NewGuid().ToString();
-                            var fileName = $"{imageUuid}.jpg";
+                            var fileName = $"{imageUuid}{extension}";
                             var filePath = Path.Combine(imagesPath, fileName);
 
-                            // Compress and save image
-                            //await CompressAndSaveImage(file, filePath);
+                            // Save image directly without compression
+                            using (var stream = new FileStream(filePath, FileMode.Create))
+                            {
+                                await file.CopyToAsync(stream);
+                            }
 
                             uploadedImageNames.Add(fileName);
                         }
@@ -237,6 +254,9 @@ namespace HullCellReport.Controllers
                                 if (form.txt_status == "C")
                                 {
                                     await SendToThingsBoard(form);
+                                    
+                                    // Export PDF and save to File Server
+                                    await ExportAndSavePDFToFileServer(form);
                                 }
 
                                 updated = true;
@@ -316,6 +336,9 @@ namespace HullCellReport.Controllers
                     if (form.txt_status == "C")
                     {
                         await SendToThingsBoard(form);
+                        
+                        // Export PDF and save to File Server
+                        await ExportAndSavePDFToFileServer(form);
                     }
 
                     return Json(new { success = true, text = "บันทึกข้อมูลสำเร็จ", uuid = form.txt_uuid });
@@ -970,10 +993,316 @@ namespace HullCellReport.Controllers
             return View();
         }
 
+        [HttpGet]
+        public async Task<IActionResult> ExportPDF(string uuid)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(uuid))
+                {
+                    return BadRequest("UUID is required");
+                }
+
+                var dataLogPath = Path.Combine(_env.WebRootPath, "data_log");
+                CreateReportFM report = null;
+
+                if (Directory.Exists(dataLogPath))
+                {
+                    var jsonFiles = Directory.GetFiles(dataLogPath, "*.json");
+                    foreach (var filePath in jsonFiles)
+                    {
+                        var jsonContent = await System.IO.File.ReadAllTextAsync(filePath);
+                        if (!string.IsNullOrWhiteSpace(jsonContent))
+                        {
+                            var reports = JsonSerializer.Deserialize<List<CreateReportFM>>(jsonContent);
+                            report = reports?.FirstOrDefault(r => r.txt_uuid == uuid);
+                            if (report != null) break;
+                        }
+                    }
+                }
+
+                if (report == null)
+                {
+                    return NotFound("Report not found");
+                }
+
+                // Render view to string
+                var viewPath = "~/Views/PDFTemplate/Report.cshtml";
+                var htmlContent = await RenderViewToStringAsync(viewPath, report);
+
+                // Convert logo to base64
+                var logoPath = Path.Combine(_env.WebRootPath, "images", "system", "report_logo.jpg");
+                if (System.IO.File.Exists(logoPath))
+                {
+                    var logoBytes = await System.IO.File.ReadAllBytesAsync(logoPath);
+                    var logoBase64 = Convert.ToBase64String(logoBytes);
+                    var logoBase64Src = $"data:image/jpeg;base64,{logoBase64}";
+                    htmlContent = htmlContent.Replace("/images/system/report_logo.jpg", logoBase64Src);
+                }
+
+                // Convert image paths to base64 for PDF and rotate if landscape
+                if (report.txt_uploaded_images != null && report.txt_uploaded_images.Count > 0)
+                {
+                    var imagesPath = Path.Combine(_env.WebRootPath, "images", "data_log");
+                    foreach (var imageName in report.txt_uploaded_images)
+                    {
+                        var imagePath = Path.Combine(imagesPath, imageName);
+                        if (System.IO.File.Exists(imagePath))
+                        {
+                            using (var image = Image.Load(imagePath))
+                            {
+                                // Rotate if landscape
+                                if (image.Width > image.Height)
+                                {
+                                    image.Mutate(x => x.Rotate(90));
+                                }
+                                
+                                // Convert to base64
+                                using (var ms = new MemoryStream())
+                                {
+                                    await image.SaveAsJpegAsync(ms);
+                                    var base64 = Convert.ToBase64String(ms.ToArray());
+                                    var base64Src = $"data:image/jpeg;base64,{base64}";
+                                    
+                                    // Replace the path with base64
+                                    var pathToReplace = $"/images/data_log/{imageName}";
+                                    htmlContent = htmlContent.Replace(pathToReplace, base64Src);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Generate PDF
+                var doc = new HtmlToPdfDocument()
+                {
+                    GlobalSettings = {
+                        ColorMode = ColorMode.Color,
+                        Orientation = Orientation.Portrait,
+                        PaperSize = PaperKind.A4,
+                    },
+                    Objects = {
+                        new ObjectSettings() {
+                            HtmlContent = htmlContent,
+                            WebSettings = { DefaultEncoding = "utf-8" }
+                        }
+                    }
+                };
+
+                var pdf = _pdfConverter.Convert(doc);
+                
+                // Format date and time for filename
+                string dateStr = "Unknown";
+                if (!string.IsNullOrEmpty(report.txt_sampling_date) && DateTime.TryParse(report.txt_sampling_date, out DateTime samplingDate))
+                {
+                    dateStr = samplingDate.ToString("yyyyMMdd");
+                }
+                
+                string timeStr = "";
+                if (!string.IsNullOrEmpty(report.txt_time) && TimeSpan.TryParse(report.txt_time, out TimeSpan samplingTime))
+                {
+                    timeStr = $"_{samplingTime.Hours:D2}{samplingTime.Minutes:D2}";
+                }
+                
+                var fileName = $"HullCellReport_{dateStr}{timeStr}_{uuid.Substring(0, 8)}.pdf";
+
+                return File(pdf, "application/pdf", fileName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error exporting PDF");
+                return StatusCode(500, "Error generating PDF");
+            }
+        }
+
+        private async Task<string> RenderViewToStringAsync(string viewPath, object model)
+        {
+            ViewData.Model = model;
+            using (var sw = new StringWriter())
+            {
+                var engine = HttpContext.RequestServices.GetService(typeof(Microsoft.AspNetCore.Mvc.ViewEngines.ICompositeViewEngine)) as Microsoft.AspNetCore.Mvc.ViewEngines.ICompositeViewEngine;
+                var viewResult = engine.GetView(null, viewPath, false);
+
+                if (!viewResult.Success)
+                {
+                    throw new InvalidOperationException($"View {viewPath} not found");
+                }
+
+                var viewContext = new ViewContext(
+                    ControllerContext,
+                    viewResult.View,
+                    ViewData,
+                    TempData,
+                    sw,
+                    new Microsoft.AspNetCore.Mvc.ViewFeatures.HtmlHelperOptions()
+                );
+
+                await viewResult.View.RenderAsync(viewContext);
+                return sw.ToString();
+            }
+        }
+
+        private async Task ExportAndSavePDFToFileServer(CreateReportFM report)
+        {
+            try
+            {
+                // Render view to string
+                var viewPath = "~/Views/PDFTemplate/Report.cshtml";
+                var htmlContent = await RenderViewToStringAsync(viewPath, report);
+
+                // Convert logo to base64
+                var logoPath = Path.Combine(_env.WebRootPath, "images", "system", "report_logo.jpg");
+                if (System.IO.File.Exists(logoPath))
+                {
+                    var logoBytes = await System.IO.File.ReadAllBytesAsync(logoPath);
+                    var logoBase64 = Convert.ToBase64String(logoBytes);
+                    var logoBase64Src = $"data:image/jpeg;base64,{logoBase64}";
+                    htmlContent = htmlContent.Replace("/images/system/report_logo.jpg", logoBase64Src);
+                }
+
+                // Convert image paths to base64 for PDF and rotate if landscape
+                if (report.txt_uploaded_images != null && report.txt_uploaded_images.Count > 0)
+                {
+                    var imagesPath = Path.Combine(_env.WebRootPath, "images", "data_log");
+                    foreach (var imageName in report.txt_uploaded_images)
+                    {
+                        var imagePath = Path.Combine(imagesPath, imageName);
+                        if (System.IO.File.Exists(imagePath))
+                        {
+                            using (var image = Image.Load(imagePath))
+                            {
+                                // Rotate if landscape
+                                if (image.Width > image.Height)
+                                {
+                                    image.Mutate(x => x.Rotate(90));
+                                }
+                                
+                                // Convert to base64
+                                using (var ms = new MemoryStream())
+                                {
+                                    await image.SaveAsJpegAsync(ms);
+                                    var base64 = Convert.ToBase64String(ms.ToArray());
+                                    var base64Src = $"data:image/jpeg;base64,{base64}";
+                                    
+                                    // Replace the path with base64
+                                    var pathToReplace = $"/images/data_log/{imageName}";
+                                    htmlContent = htmlContent.Replace(pathToReplace, base64Src);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Generate PDF
+                var doc = new HtmlToPdfDocument()
+                {
+                    GlobalSettings = {
+                        ColorMode = ColorMode.Color,
+                        Orientation = Orientation.Portrait,
+                        PaperSize = PaperKind.A4,
+                    },
+                    Objects = {
+                        new ObjectSettings() {
+                            HtmlContent = htmlContent,
+                            WebSettings = { DefaultEncoding = "utf-8" }
+                        }
+                    }
+                };
+
+                var pdfBytes = _pdfConverter.Convert(doc);
+                
+                // Format date and time for filename (same as ExportPDF method)
+                string dateStr = "Unknown";
+                if (!string.IsNullOrEmpty(report.txt_sampling_date) && DateTime.TryParse(report.txt_sampling_date, out DateTime samplingDate))
+                {
+                    dateStr = samplingDate.ToString("yyyyMMdd");
+                }
+                
+                string timeStr = "";
+                if (!string.IsNullOrEmpty(report.txt_time) && TimeSpan.TryParse(report.txt_time, out TimeSpan samplingTime))
+                {
+                    timeStr = $"_{samplingTime.Hours:D2}{samplingTime.Minutes:D2}";
+                }
+                
+                var fileName = $"HullCellReport_{dateStr}{timeStr}_{report.txt_uuid.Substring(0, 8)}.pdf";
+
+                // Save to File Server via SMB
+                var credential = new NetworkCredential(_configuration["SMB:Username"], _configuration["SMB:Password"]);
+                var sharePath = @"\\fileserver\File_ShareStorage\Share_WebStorage\HullCellReport";
+                
+                using (new WindowsNetworkFileShare(sharePath, credential))
+                {
+                    var fullPath = Path.Combine(sharePath, fileName);
+                    await System.IO.File.WriteAllBytesAsync(fullPath, pdfBytes);
+                    _logger.LogInformation($"PDF saved to file server: {fullPath}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error exporting and saving PDF to file server");
+                // Don't throw - we don't want to fail the save operation if PDF export fails
+            }
+        }
+
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        }
+    }
+
+    // Helper class for SMB network share access
+    public class WindowsNetworkFileShare : IDisposable
+    {
+        [DllImport("mpr.dll")]
+        private static extern int WNetAddConnection2(NetResource netResource, string password, string username, int flags);
+
+        [DllImport("mpr.dll")]
+        private static extern int WNetCancelConnection2(string name, int flags, bool force);
+
+        [StructLayout(LayoutKind.Sequential)]
+        private class NetResource
+        {
+            public int Scope = 0;
+            public int Type = 1; // RESOURCETYPE_DISK
+            public int DisplayType = 0;
+            public int Usage = 0;
+            public string LocalName = null;
+            public string RemoteName = null;
+            public string Comment = null;
+            public string Provider = null;
+        }
+
+        private string _networkName;
+
+        public WindowsNetworkFileShare(string networkName, NetworkCredential credentials)
+        {
+            _networkName = networkName;
+
+            var netResource = new NetResource
+            {
+                Scope = 0,
+                Type = 1,
+                DisplayType = 0,
+                Usage = 0,
+                RemoteName = networkName
+            };
+
+            var userName = string.IsNullOrEmpty(credentials.Domain)
+                ? credentials.UserName
+                : credentials.Domain + "\\" + credentials.UserName;
+
+            var result = WNetAddConnection2(netResource, credentials.Password, userName, 0);
+
+            if (result != 0)
+            {
+                throw new System.ComponentModel.Win32Exception(result, $"Error connecting to network share: {networkName}");
+            }
+        }
+
+        public void Dispose()
+        {
+            WNetCancelConnection2(_networkName, 0, true);
         }
     }
 }

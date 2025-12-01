@@ -16,6 +16,9 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using HullCellReport.Middlewares;
+using DinkToPdf;
+using DinkToPdf.Contracts;
+using System.Runtime.Loader;
 
 namespace HullCellReport
 {
@@ -80,6 +83,23 @@ namespace HullCellReport
             #region repository
             services.AddScoped(typeof(DapperService));
             services.AddScoped(typeof(EmployeeRepository));
+            #endregion
+
+            #region DinkToPdf
+            var context = new CustomAssemblyLoadContext();
+            var architectureFolder = (IntPtr.Size == 8) ? "64 bit" : "32 bit";
+            var wkHtmlToPdfPath = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), $"wkhtmltopdf");
+            
+            // Try to load from wkhtmltopdf folder first
+            var libPath = System.IO.Path.Combine(wkHtmlToPdfPath, "libwkhtmltox.dll");
+            if (!System.IO.File.Exists(libPath))
+            {
+                // Fallback to default path
+                libPath = System.IO.Path.Combine(wkHtmlToPdfPath, architectureFolder, "libwkhtmltox.dll");
+            }
+            
+            context.LoadUnmanagedLibrary(libPath);
+            services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
             #endregion
         }
 
@@ -148,3 +168,22 @@ namespace HullCellReport
         }
     }
 }
+
+
+    internal class CustomAssemblyLoadContext : AssemblyLoadContext
+    {
+        public IntPtr LoadUnmanagedLibrary(string absolutePath)
+        {
+            return LoadUnmanagedDll(absolutePath);
+        }
+
+        protected override IntPtr LoadUnmanagedDll(string unmanagedDllName)
+        {
+            return LoadUnmanagedDllFromPath(unmanagedDllName);
+        }
+
+        protected override System.Reflection.Assembly Load(System.Reflection.AssemblyName assemblyName)
+        {
+            throw new NotImplementedException();
+        }
+    }

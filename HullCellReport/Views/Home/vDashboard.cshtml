@@ -355,6 +355,26 @@
             box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
         }
 
+    .btn-export {
+        padding: 6px 12px;
+        background: linear-gradient(135deg, #4CAF50, #388E3C);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+        .btn-export:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+        }
+
     .sort-icon {
         cursor: pointer;
         margin-left: 5px;
@@ -534,6 +554,7 @@
                         <th>208B</th>
                         <th>สถานะ</th>
                         <th>จัดการ</th>
+                        <th>Export</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody">

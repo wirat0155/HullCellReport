@@ -15,6 +15,7 @@ namespace HullCellReport.Models
         public string txt_analysis_by { get; set; }
         public string txt_sampling_date { get; set; }
         public string txt_time { get; set; }
+        public string txt_remark { get; set; }
 
         // Composition Analysis
         public decimal? txt_zinc_metal { get; set; }
