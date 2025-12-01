@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
@@ -26,6 +26,8 @@
 
   <ItemGroup>
     <Folder Include="Models\DbModels\" />
+    <Folder Include="wwwroot\data_log\" />
+    <Folder Include="wwwroot\images\data_log\" />
   </ItemGroup>
 
   <ItemGroup>

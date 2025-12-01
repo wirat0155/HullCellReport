@@ -514,21 +514,21 @@ namespace HullCellReport.Controllers
                 ModelState.AddModelError("txt_caustic_soda", "กรุณากรอกค่า");
                 result = true;
             }
-            if (form.txt_sodium_carbonate == null)
-            {
-                ModelState.AddModelError("txt_sodium_carbonate", "กรุณากรอกค่า");
-                result = true;
-            }
-            if (form.txt_nickel == null)
-            {
-                ModelState.AddModelError("txt_nickel", "กรุณากรอกค่า");
-                result = true;
-            }
-            if (form.txt_us_208t == null)
-            {
-                ModelState.AddModelError("txt_us_208t", "กรุณากรอกค่า");
-                result = true;
-            }
+            //if (form.txt_sodium_carbonate == null)
+            //{
+            //    ModelState.AddModelError("txt_sodium_carbonate", "กรุณากรอกค่า");
+            //    result = true;
+            //}
+            //if (form.txt_nickel == null)
+            //{
+            //    ModelState.AddModelError("txt_nickel", "กรุณากรอกค่า");
+            //    result = true;
+            //}
+            //if (form.txt_us_208t == null)
+            //{
+            //    ModelState.AddModelError("txt_us_208t", "กรุณากรอกค่า");
+            //    result = true;
+            //}
             if (form.txt_result_1cm == null)
             {
                 ModelState.AddModelError("txt_result_1cm", "กรุณากรอกค่า");
