@@ -26,8 +26,6 @@
 
   <ItemGroup>
     <Folder Include="Models\DbModels\" />
-    <Folder Include="wwwroot\data_log\" />
-    <Folder Include="wwwroot\images\data_log\" />
   </ItemGroup>
 
   <ItemGroup>

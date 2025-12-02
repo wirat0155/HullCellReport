@@ -104,6 +104,8 @@
         .main-content {
             display: table;
             width: 100%;
+            border: 1px solid black;
+            height: 1000px;
         }
         
         .left-section {
@@ -187,27 +189,48 @@
             height: 100%;
             position: relative;
         }
+
+        table.header {
+            width: 100%;
+            table-layout: fixed;
+            border-collapse: collapse;
+        }
+
+        table.header td {
+            vertical-align: top;
+            text-align: center;
+            padding: 10px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
+        <p style="text-align: center;">QA-PT / Retention : 1 Years</p>
         <div class="header">
-            <div class="header-top">
-                <div class="header-left">
-                    <img src="/images/system/report_logo.jpg" alt="Logo" style="max-width: 120px; max-height: 80px; display: block;" />
-                    <div style="font-size: 16px; margin-top: 5px;">QA-PT / Retention : 1 Years</div>
-                </div>
-                <div class="header-center">
-                    <h1>Hull Cell Report</h1>
-                </div>
-                <div class="header-right">
-                    <div class="stamps">
-                        <div class="stamp">Approved</div>
-                        <div class="stamp">Checked</div>
-                        <div class="stamp">Analysed</div>
-                    </div>
-                </div>
-            </div>
+            <table class="header">
+                <tr>
+                    <td style="vertical-align: inherit; ">
+                        <img src="/images/system/report_logo.jpg" alt="Logo" style="max-width: 120px; max-height: 80px; display: block;" />
+                    </td>
+                    <td>
+                        <h1>Hull Cell Report</h1>
+                    </td>
+                    <td style="padding: 0px;">
+                        <table>
+                            <tr>
+                                <td><b>Approved</b></td>
+                                <td><b>Checked</b></td>
+                                <td><b>Analysed</b></td>
+                            </tr>
+                            <tr style="height: 80px;">
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                        </table> 
+                    </td>
+                </tr>
+            </table>
             <div class="line-info">
                 <strong>Line:</strong> @Model.txt_line
             </div>
@@ -252,6 +275,7 @@
                         {
                             <img src="/images/data_log/@imageName" alt="Hull Cell Image" />
                         }
+                        <p style="color: blue;">4.0A 20 Minute Anode Ni</p>
                     </div>
                 }
                 else
@@ -421,9 +445,10 @@
             </div>
         }
         
-        <div class="footer">
-            Generated: @DateTime.Now.ToString("dd/MM/yyyy HH:mm")
-        </div>
+    <div class="footer">
+        Generated: @DateTime.Now.ToString("dd/MM/yyyy HH:mm")<br/>
+        FQ-CH-0461 Effective Date 13/08/25
+    </div>
     </div>
 </body>
 </html>
