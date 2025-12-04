@@ -610,6 +610,55 @@ namespace HullCellReport.Controllers
                 result = true;
             }
 
+            if (float.TryParse(form.txt_zn_1cm, out float zn1) &&
+                float.TryParse(form.txt_ni_1cm, out float ni1))
+            {
+                if (Math.Abs(zn1 + ni1 - 100) > 0.01f)
+                {
+                    ModelState.AddModelError("txt_zn_1cm", "% Zn + % Ni ต้องเท่ากับ 100");
+                    result = true;
+                }
+            }
+
+            if (float.TryParse(form.txt_zn_3cm, out float zn3) &&
+                float.TryParse(form.txt_ni_3cm, out float ni3))
+            {
+                if (Math.Abs(zn3 + ni3 - 100) > 0.01f)
+                {
+                    ModelState.AddModelError("txt_zn_3cm", "% Zn + % Ni ต้องเท่ากับ 100");
+                    result = true;
+                }
+            }
+
+            if (float.TryParse(form.txt_zn_5cm, out float zn5) &&
+                float.TryParse(form.txt_ni_5cm, out float ni5))
+            {
+                if (Math.Abs(zn5 + ni5 - 100) > 0.01f)
+                {
+                    ModelState.AddModelError("txt_zn_5cm", "% Zn + % Ni ต้องเท่ากับ 100");
+                    result = true;
+                }
+            }
+
+            if (float.TryParse(form.txt_zn_7cm, out float zn7) &&
+                float.TryParse(form.txt_ni_7cm, out float ni7))
+            {
+                if (Math.Abs(zn7 + ni7 - 100) > 0.01f)
+                {
+                    ModelState.AddModelError("txt_zn_7cm", "% Zn + % Ni ต้องเท่ากับ 100");
+                    result = true;
+                }
+            }
+
+            if (float.TryParse(form.txt_zn_9cm, out float zn9) &&
+                float.TryParse(form.txt_ni_9cm, out float ni9))
+            {
+                if (Math.Abs(zn9 + ni9 - 100) > 0.01f)
+                {
+                    ModelState.AddModelError("txt_zn_9cm", "% Zn + % Ni ต้องเท่ากับ 100");
+                    result = true;
+                }
+            }
             return result;
         }
 
