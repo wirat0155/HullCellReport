@@ -46,7 +46,7 @@ async function Save(event) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        const { success, text = "", errors = [], redirectToEdit = false, uuid = "" } = await response.json();
+        const { success, text = "", errors = [], redirectToEdit = false, uuid = "", sendToNodeRed = false, nodeRedData = null } = await response.json();
 
         if (!success) {
             // Check if need to redirect to edit incomplete report
@@ -67,6 +67,39 @@ async function Save(event) {
             if (typeof showError === 'function') showError(errors);
             if (typeof SwalNG === 'function') SwalNG(errors);
         } else {
+            // Send to Node-RED if needed (from client side)
+            if (sendToNodeRed && nodeRedData) {
+                try {
+                    // Create AbortController for timeout
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 seconds timeout
+                    
+                    const nodeRedResponse = await fetch('http://192.168.1.129:1880/data', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(nodeRedData),
+                        signal: controller.signal
+                    });
+                    
+                    clearTimeout(timeoutId);
+                    
+                    if (nodeRedResponse.ok) {
+                        console.log('Successfully sent data to Node-RED');
+                    } else {
+                        console.warn('Failed to send data to Node-RED:', nodeRedResponse.status);
+                    }
+                } catch (nodeRedError) {
+                    if (nodeRedError.name === 'AbortError') {
+                        console.error('Node-RED request timeout after 10 seconds');
+                    } else {
+                        console.error('Error sending data to Node-RED:', nodeRedError);
+                    }
+                    // Don't show error to user, just log it
+                }
+            }
+
             // กรณีสำเร็จ - แสดง alert แล้ว redirect ไป dashboard
             Swal.fire({
                 title: 'สำเร็จ',

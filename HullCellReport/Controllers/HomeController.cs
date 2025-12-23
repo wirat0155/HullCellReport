@@ -257,6 +257,16 @@ namespace HullCellReport.Controllers
                                     
                                     // Export PDF and save to File Server
                                     await ExportAndSavePDFToFileServer(form);
+                                    
+                                    // Get data for Node-RED to send from client
+                                    var nodeRedData = GetNodeRedData(form);
+                                    return Json(new { 
+                                        success = true, 
+                                        text = "แก้ไขข้อมูลสำเร็จ", 
+                                        uuid = form.txt_uuid,
+                                        sendToNodeRed = true,
+                                        nodeRedData = nodeRedData
+                                    });
                                 }
 
                                 updated = true;
@@ -339,6 +349,16 @@ namespace HullCellReport.Controllers
                         
                         // Export PDF and save to File Server
                         await ExportAndSavePDFToFileServer(form);
+                        
+                        // Get data for Node-RED to send from client
+                        var nodeRedData = GetNodeRedData(form);
+                        return Json(new { 
+                            success = true, 
+                            text = "บันทึกข้อมูลสำเร็จ", 
+                            uuid = form.txt_uuid,
+                            sendToNodeRed = true,
+                            nodeRedData = nodeRedData
+                        });
                     }
 
                     return Json(new { success = true, text = "บันทึกข้อมูลสำเร็จ", uuid = form.txt_uuid });
@@ -373,7 +393,7 @@ namespace HullCellReport.Controllers
                 var feed208b = ProcessAutoFeedData("208b", form.txt_auto_feed_208b, form.txt_uuid);
                 telemetryData.Add(feed208b);
 
-                // Send to ThingsBoard
+                // Send to ThingsBoard only
                 using (var httpClient = new System.Net.Http.HttpClient())
                 {
                     var url = "http://thingsboard.cloud/api/v1/lP2VHpjA0nd9YCOHRRLL/telemetry";
@@ -397,6 +417,29 @@ namespace HullCellReport.Controllers
                 _logger.LogError(ex, "Error sending data to ThingsBoard");
                 // Don't throw - we don't want to fail the save operation if ThingsBoard fails
             }
+        }
+
+        private List<Dictionary<string, object>> GetNodeRedData(CreateReportFM form)
+        {
+            var telemetryData = new List<Dictionary<string, object>>();
+
+            // Process 208N
+            var feed208n = ProcessAutoFeedData("208n", form.txt_auto_feed_208n, form.txt_uuid);
+            telemetryData.Add(feed208n);
+
+            // Process 208T
+            var feed208t = ProcessAutoFeedData("208t", form.txt_auto_feed_208t, form.txt_uuid);
+            telemetryData.Add(feed208t);
+
+            // Process 208A
+            var feed208a = ProcessAutoFeedData("208a", form.txt_auto_feed_208a, form.txt_uuid);
+            telemetryData.Add(feed208a);
+
+            // Process 208B
+            var feed208b = ProcessAutoFeedData("208b", form.txt_auto_feed_208b, form.txt_uuid);
+            telemetryData.Add(feed208b);
+
+            return telemetryData;
         }
 
         private Dictionary<string, object> ProcessAutoFeedData(string feedType, string value, string uuid = null)
@@ -610,53 +653,60 @@ namespace HullCellReport.Controllers
                 result = true;
             }
 
-            if (float.TryParse(form.txt_zn_1cm, out float zn1) &&
-                float.TryParse(form.txt_ni_1cm, out float ni1))
-            {
-                if (Math.Abs(zn1 + ni1 - 100) > 0.01f)
-                {
-                    ModelState.AddModelError("txt_zn_1cm", "% Zn + % Ni ต้องเท่ากับ 100");
-                    result = true;
-                }
-            }
+            // Skip Zn + Ni = 100 validation for localhost
+            bool isLocalhost = Request.Host.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase) || 
+                              Request.Host.Host.Equals("127.0.0.1", StringComparison.OrdinalIgnoreCase);
 
-            if (float.TryParse(form.txt_zn_3cm, out float zn3) &&
-                float.TryParse(form.txt_ni_3cm, out float ni3))
+            if (!isLocalhost)
             {
-                if (Math.Abs(zn3 + ni3 - 100) > 0.01f)
+                if (float.TryParse(form.txt_zn_1cm, out float zn1) &&
+                    float.TryParse(form.txt_ni_1cm, out float ni1))
                 {
-                    ModelState.AddModelError("txt_zn_3cm", "% Zn + % Ni ต้องเท่ากับ 100");
-                    result = true;
+                    if (Math.Abs(zn1 + ni1 - 100) > 0.01f)
+                    {
+                        ModelState.AddModelError("txt_zn_1cm", "% Zn + % Ni ต้องเท่ากับ 100");
+                        result = true;
+                    }
                 }
-            }
 
-            if (float.TryParse(form.txt_zn_5cm, out float zn5) &&
-                float.TryParse(form.txt_ni_5cm, out float ni5))
-            {
-                if (Math.Abs(zn5 + ni5 - 100) > 0.01f)
+                if (float.TryParse(form.txt_zn_3cm, out float zn3) &&
+                    float.TryParse(form.txt_ni_3cm, out float ni3))
                 {
-                    ModelState.AddModelError("txt_zn_5cm", "% Zn + % Ni ต้องเท่ากับ 100");
-                    result = true;
+                    if (Math.Abs(zn3 + ni3 - 100) > 0.01f)
+                    {
+                        ModelState.AddModelError("txt_zn_3cm", "% Zn + % Ni ต้องเท่ากับ 100");
+                        result = true;
+                    }
                 }
-            }
 
-            if (float.TryParse(form.txt_zn_7cm, out float zn7) &&
-                float.TryParse(form.txt_ni_7cm, out float ni7))
-            {
-                if (Math.Abs(zn7 + ni7 - 100) > 0.01f)
+                if (float.TryParse(form.txt_zn_5cm, out float zn5) &&
+                    float.TryParse(form.txt_ni_5cm, out float ni5))
                 {
-                    ModelState.AddModelError("txt_zn_7cm", "% Zn + % Ni ต้องเท่ากับ 100");
-                    result = true;
+                    if (Math.Abs(zn5 + ni5 - 100) > 0.01f)
+                    {
+                        ModelState.AddModelError("txt_zn_5cm", "% Zn + % Ni ต้องเท่ากับ 100");
+                        result = true;
+                    }
                 }
-            }
 
-            if (float.TryParse(form.txt_zn_9cm, out float zn9) &&
-                float.TryParse(form.txt_ni_9cm, out float ni9))
-            {
-                if (Math.Abs(zn9 + ni9 - 100) > 0.01f)
+                if (float.TryParse(form.txt_zn_7cm, out float zn7) &&
+                    float.TryParse(form.txt_ni_7cm, out float ni7))
                 {
-                    ModelState.AddModelError("txt_zn_9cm", "% Zn + % Ni ต้องเท่ากับ 100");
-                    result = true;
+                    if (Math.Abs(zn7 + ni7 - 100) > 0.01f)
+                    {
+                        ModelState.AddModelError("txt_zn_7cm", "% Zn + % Ni ต้องเท่ากับ 100");
+                        result = true;
+                    }
+                }
+
+                if (float.TryParse(form.txt_zn_9cm, out float zn9) &&
+                    float.TryParse(form.txt_ni_9cm, out float ni9))
+                {
+                    if (Math.Abs(zn9 + ni9 - 100) > 0.01f)
+                    {
+                        ModelState.AddModelError("txt_zn_9cm", "% Zn + % Ni ต้องเท่ากับ 100");
+                        result = true;
+                    }
                 }
             }
             return result;
