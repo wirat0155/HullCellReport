@@ -334,23 +334,23 @@ function checkNi1cm() {
 
     if (isNaN(ni)) return;
 
-    // 1) 14.3 – 15.0 → Auto feed Open ทุกตัว
-    if (ni >= 14.3 && ni <= 15.0) {
+    // จาก 14.3 – 15.0 → Auto feed Open ทุกตัว
+    if (ni >= 14.0 && ni <= 14.8) {
         autoN.value = "Open";
         autoA.value = "Open";
         autoB.value = "Open";
         return;
     }
 
-    // 2) 13.9 – 14.2 → ปรับเติม 208N 3 ลิตร + Auto feed Open
-    if (ni >= 13.9 && ni < 14.3) {
+    // จาก 13.9 – 14.2 → ปรับเติม 208N 3 ลิตร + Auto feed Open
+    if (ni >= 13.6 && ni < 14.0) {
         autoN.value = autoA.value = autoB.value = "Open";
         adjN.value = "ปรับเติม 208N 3 ลิตร";
         return;
     }
 
-    // 3) Ni < 13.9 → ปรับเติม 5 ลิตร + Request PD calibration + ลดแช่ซิงค์ 1 ตะแกรง
-    if (ni < 13.9) {
+    // จาก Ni < 13.9 → ปรับเติม 5 ลิตร + Request PD calibration + ลดแช่ซิงค์ 1 ตะแกรง
+    if (ni < 13.6) {
         autoN.value = autoA.value = autoB.value = "Open";
         adjN.value = "ปรับเติม 208N 5 ลิตร";
         remarkN.value = "Request PD calibration feed";
@@ -366,7 +366,8 @@ function checkNi1cm() {
         return;
     }
 
-    if (ni > 15 && ni < 16) {
+    // จาก 15 , 16
+    if (ni > 14.8 && ni < 16) {
         autoN.value = "Stop feed 208N 2 ชั่วโมง";
         autoA.value = autoB.value = "Open";
         batchZn.value = "แช่ซิงค์มากกว่ามาตรฐานเดิม 1 ตะแกรง โดยดูชิ้นงานประกอบ";
@@ -390,17 +391,22 @@ function checkNi9cm() {
 
     if (isNaN(ni)) return;
 
-    if (ni < 13.3 && ni >= 12.5) {
+    // จาก 13.3, 12.5
+    if (ni < 12.8 && ni >= 12.3) {
         adjB.value = "ปรับเติม 208B 1 ลิตร";
         adjA.value = "ปรับเติม 208A 0.5 ลิตร";
-        remarkA.value = "ตามเงื่อนไข %Ni < 13.5";
-        remarkB.value = "ตามเงื่อนไข %Ni < 13.5";
-    } else if (ni < 12.5) {
+        remarkA.value = "ตามเงื่อนไข %Ni < 12.8";
+        remarkB.value = "ตามเงื่อนไข %Ni < 12.8";
+    }
+    // จาก 12.5
+    else if (ni < 12.3) {
         adjB.value = "ปรับเติม 208B 1.5 ลิตร";
         adjA.value = "ปรับเติม 208A 0.8 ลิตร";
-        remarkA.value = "ตามเงื่อนไข %Ni < 12.5";
-        remarkB.value = "ตามเงื่อนไข %Ni < 12.5";
-    } else if (ni >= 13.3 && ni <= 14.5) {
+        remarkA.value = "ตามเงื่อนไข %Ni < 12.3";
+        remarkB.value = "ตามเงื่อนไข %Ni < 12.3";
+    }
+    // จาก 13.3, 14.5
+    else if (ni >= 12.8 && ni <= 14.5) {
         remarkA.value = "อยู่ในเกณฑ์ ไม่ต้องปรับ";
         remarkB.value = "อยู่ในเกณฑ์ ไม่ต้องปรับ";
     }
