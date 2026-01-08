@@ -1,4 +1,6 @@
 @model HullCellReport.Models.CreateReportFM
+@using HullCellReport.Repositories
+@inject EmployeeRepository EmployeeRepo
 @{
     DateTime? samplingDate = null;
     if (!string.IsNullOrEmpty(Model.txt_sampling_date))
@@ -12,6 +14,34 @@
     {
         TimeSpan.TryParse(Model.txt_time, out var t);
         time = t;
+    }
+
+    string checkByName = "System";
+    if (!string.IsNullOrEmpty(Model.txt_checkby) && Model.txt_checkby != "MISSING_KEY")
+    {
+        try
+        {
+            var emp = await EmployeeRepo.GetByEmpno(Model.txt_checkby, requirePermission1513: false);
+            checkByName = emp?.empnameengshort1 ?? Model.txt_checkby;
+        }
+        catch
+        {
+            checkByName = Model.txt_checkby;
+        }
+    }
+
+    string analysisByName = Model.txt_analysis_by;
+    if (!string.IsNullOrEmpty(Model.txt_analysis_by))
+    {
+        try
+        {
+            var emp = await EmployeeRepo.GetByEmpno(Model.txt_analysis_by, requirePermission1513: false);
+            analysisByName = emp?.empnameengshort1 ?? Model.txt_analysis_by;
+        }
+        catch
+        {
+            // ignore
+        }
     }
 }
 <!DOCTYPE html>
@@ -29,7 +59,7 @@
         body {
             font-family: Arial, sans-serif;
             padding: 10px;
-            font-size: 16px;
+            font-size: 13px; /* Reduced from 16px */
         }
         
         .container {
@@ -38,20 +68,20 @@
         
         .header {
             border-bottom: 2px solid black;
-            padding-bottom: 5px;
-            margin-bottom: 5px;
+            padding-bottom: 2px;
+            margin-bottom: 3px;
         }
         
         .header-top {
             display: table;
             width: 100%;
-            margin-bottom: 3px;
+            margin-bottom: 2px;
         }
         
         .header-left {
             display: table-cell;
             width: 25%;
-            font-size: 16px;
+            font-size: 13px;
             vertical-align: middle;
         }
         
@@ -63,7 +93,7 @@
         }
         
         .header-center h1 {
-            font-size: 24px;
+            font-size: 20px; /* Reduced from 24px */
             margin: 0;
         }
         
@@ -80,32 +110,35 @@
         
         .stamp {
             display: table-cell;
-            width: 90px;
-            height: 90px;
+            width: 80px; /* Reduced */
+            height: 70px; /* Reduced */
             border: 2px solid #333;
-            text-align: center;    /* ข้อความอยู่กลางแนวนอน */
-            vertical-align: top;   /* ข้อความอยู่ด้านบน */
-            padding-top: 5px;      /* กำหนดระยะห่างจากขอบบน */
-            font-size: 16px;
+            text-align: center;    
+            vertical-align: top;   
+            padding-top: 3px;      
+            font-size: 13px;
         }
         
         .line-info {
-            font-size: 16px;
+            font-size: 14px;
             text-align: center;
         }
         
         .sampling-date {
             border-bottom: 1px solid black;
-            padding: 5px 0;
-            font-size: 16px;
-            margin-bottom: 5px;
+            padding: 3px 0;
+            font-size: 13px;
+            margin-bottom: 3px;
         }
         
         .main-content {
             display: table;
             width: 100%;
             border: 1px solid black;
-            height: 1000px;
+            /* width: 100%; Remove height: 1000px to avoid forcing multiple pages if content is small, 
+               but maintain minimum if needed. If trying to fit on 1 page A4, max height is around 1000px.
+               Let's set min-height instead or remove. */
+             /* height: 950px; Let's restrict it to Auto to fit content. If it overflows, it overflows. */
         }
         
         .left-section {
@@ -122,34 +155,34 @@
         }
         
         .composition h3 {
-            font-size: 16px;
+            font-size: 14px;
             background: #d0d0d0;
-            padding: 3px;
+            padding: 2px;
             border: 1px solid black;
-            margin-bottom: 3px;
+            margin-bottom: 2px;
             text-align: center;
         }
         
         .composition-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 16px;
-            margin-bottom: 5px;
+            font-size: 12px;
+            margin-bottom: 3px;
         }
         
         .composition-table td {
             border: 1px solid black;
-            padding: 3px;
+            padding: 2px;
         }
         
         .image-section {
-            margin-top: 5px;
+            margin-top: 3px;
             text-align: center;
         }
         
         .image-section img {
             max-width: 100%;
-            max-height: 600px;
+            max-height: 480px; /* Reduced to fit page */
             object-fit: contain;
             border: 1px solid #ccc;
         }
@@ -157,13 +190,13 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 16px;
-            margin-bottom: 5px;
+            font-size: 12px;
+            margin-bottom: 3px;
         }
         
         th, td {
             border: 1px solid black;
-            padding: 3px;
+            padding: 2px;
             text-align: center;
         }
         
@@ -210,7 +243,7 @@
             <table class="header">
                 <tr>
                     <td style="vertical-align: inherit; ">
-                        <img src="/images/system/report_logo.jpg" alt="Logo" style="max-width: 120px; max-height: 80px; display: block;" />
+                        <img src="/images/system/report_logo.jpg" alt="Logo" style="max-width: 120px; max-height: 50px; display: block;" />
                     </td>
                     <td>
                         <h1>Hull Cell Report</h1>
@@ -222,11 +255,19 @@
                                 <td><b>Checked</b></td>
                                 <td><b>Analysed</b></td>
                             </tr>
-                            <tr style="height: 80px;">
-                                <td></td>
-                                <td></td>
-                                <td></td>
+                            <tr style="height: 50px;">
+                                <td style="vertical-align: bottom; padding-bottom: 5px; font-size: 12px; line-height: 1.2; overflow-wrap: break-word;">
+                                    <div>Chalermchai K.</div>
+                                    <div style="font-size: 10px; margin-top: 2px;">Auto Approved</div>
+                                </td>
+                                <td style="vertical-align: bottom; padding-bottom: 5px; font-size: 12px; line-height: 1.2; overflow-wrap: break-word;">
+                                    @checkByName
+                                </td>
+                                <td style="vertical-align: bottom; padding-bottom: 5px; font-size: 12px; line-height: 1.2; overflow-wrap: break-word;">
+                                    @analysisByName
+                                </td>
                             </tr>
+
                         </table> 
                     </td>
                 </tr>
@@ -239,7 +280,7 @@
         <div class="sampling-date">
             <strong>Sampling Date:</strong> @(samplingDate?.ToString("dd/MM/yyyy") ?? Model.txt_sampling_date) 
             <strong>Time:</strong> @(time?.ToString(@"hh\:mm") ?? Model.txt_time)
-            <strong style="margin-left: 20px;">Analysis By:</strong> @Model.txt_analysis_by
+            <strong style="margin-left: 20px;">Analysis By:</strong> @analysisByName
         </div>
         
         <div class="main-content">

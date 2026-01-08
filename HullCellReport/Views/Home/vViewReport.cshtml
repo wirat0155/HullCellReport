@@ -218,6 +218,13 @@
                     <span id="employee-name" style="margin-left: 10px; color: #00bcd4; font-weight: 600;"></span>
                 </span>
             </div>
+            
+            <div class="form-row d-flex align-items-center" id="checked-by-container" style="display:none !important;">
+                <span class="ms-3" style="margin-left: 215px !important;">
+                    Checked by:
+                    <span id="checked-by-name" style="margin-left: 10px; color: #4CAF50; font-weight: 700;"></span>
+                </span>
+            </div>
 
             <div class="form-row">
                 <label style="width:150px;">Sampling Date:</label>
@@ -478,6 +485,16 @@
             <p id="no-images-message" style="color: #6c757d; font-style: italic; display: none;">ไม่มีภาพที่อัพโหลด</p>
         </section>
         </form>
+        
+        <!-- Check Button Section -->
+        <div class="check-actions no-print" style="margin-top: 30px; border-top: 2px solid #eee; padding-top: 20px; text-align: center;">
+            <div id="check-permission-info" style="display: none; margin-bottom: 15px; color: #6c757d; font-style: italic;">
+                โปรดติดต่อ FM ให้ Check รายการนี้
+            </div>
+            <button type="button" id="btn-check-report" class="btn-check" onclick="checkReport()">
+                <i class="fas fa-check-circle"></i> Check รายการนี้
+            </button>
+        </div>
     </div>
 </div>
 
@@ -494,10 +511,40 @@
         transition: transform 0.2s;
     }
 
+    /* ... existing styles ... */
         .image-item:hover {
             transform: scale(1.05);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
+
+    .btn-check {
+        padding: 12px 30px;
+        background: linear-gradient(135deg, #4CAF50, #45a049);
+        color: white;
+        border: none;
+        border-radius: 50px;
+        font-size: 16px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s;
+        box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .btn-check:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
+    }
+    
+    .btn-check:disabled {
+        background: #e0e0e0;
+        color: #9e9e9e;
+        cursor: not-allowed;
+        box-shadow: none;
+        transform: none;
+    }
 
         .image-item img {
             width: 100%;

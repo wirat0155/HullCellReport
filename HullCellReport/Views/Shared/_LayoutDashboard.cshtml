@@ -439,10 +439,39 @@
                                 }
                             });
                         } else {
-                            window.location.href = `${basePath}/Home/vCreateReport`;
+                            // Check for pending reports (older than 1 day)
+                            const pendingResponse = await fetch(`${basePath}/Home/CheckPendingReports`);
+                            const { hasPending, oldestDate } = await pendingResponse.json();
+
+                            if (hasPending) {
+                                Swal.fire({
+                                    title: 'แจ้งเตือน',
+                                    text: 'มีรายการรอตรวจสอบ โปรดแจ้ง FM',
+                                    icon: 'warning',
+                                    confirmButtonColor: '#ff9800',
+                                    confirmButtonText: 'รับทราบ',
+                                    allowOutsideClick: false
+                                }).then((result) => {
+                                    if (result.isConfirmed) {
+                                        // Filter: Custom Date (Oldest - Today), Status=Complete, Check=Unchecked
+                                        const today = new Date().toISOString().split('T')[0];
+                                        const queryParams = new URLSearchParams({
+                                            startDate: oldestDate,
+                                            endDate: today,
+                                            status: 'C',
+                                            checkStatus: 'unchecked',
+                                            dateRange: 'custom' // Indicator for frontend to set 'custom' in dropdown
+                                        });
+                                        window.location.href = `${basePath}/Home/vDashboard?${queryParams.toString()}`;
+                                    }
+                                });
+                            } else {
+                                window.location.href = `${basePath}/Home/vCreateReport`;
+                            }
                         }
                     } catch (error) {
                         console.error('Error checking incomplete reports:', error);
+                        // Fallback to allow creation if check fails
                         window.location.href = `${basePath}/Home/vCreateReport`;
                     }
                 });

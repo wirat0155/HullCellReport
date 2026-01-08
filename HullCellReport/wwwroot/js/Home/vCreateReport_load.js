@@ -4,9 +4,107 @@ document.addEventListener('DOMContentLoaded', async function () {
     const uuid = urlParams.get('uuid');
 
     if (uuid) {
+        // Only run permission check if check button exists (vViewReport)
+        if (document.getElementById('btn-check-report')) {
+            await checkPermissionAndSetupButton(uuid);
+        }
         await loadReportData(uuid);
     }
 });
+
+async function checkPermissionAndSetupButton(uuid) {
+    try {
+        const response = await fetch(`${basePath}/Home/GetCurrentUserPermissions`);
+        const { success, canCheckReport } = await response.json();
+
+        const btnCheck = document.getElementById('btn-check-report');
+        const infoText = document.getElementById('check-permission-info');
+
+        if (btnCheck) {
+            // Set UUID to button dataset
+            btnCheck.dataset.uuid = uuid;
+
+            // Check current report status first
+            // Note: We need to wait for report data to load to check status,
+            // or pass status to this function. Better to wait or use global state.
+            // But since loadReportData calls fetchReportData, we can check there.
+            // Let's modify loadReportData to handle this or expose status.
+
+            // Assuming the button state should be updated after data load.
+            // So we will just set permission state here, 
+            // and additional status check will be done in populateForm or loadReportData.
+
+            btnCheck.dataset.canCheck = (success && canCheckReport) ? "true" : "false";
+
+            // Initial UI state based on permission only
+            if (success && canCheckReport) {
+                // Enabled by permission, but might be disabled by status later
+                btnCheck.disabled = false;
+                if (infoText) infoText.style.display = 'none';
+            } else {
+                btnCheck.disabled = true;
+                if (infoText) {
+                    infoText.textContent = "โปรดติดต่อ FM ให้ Check รายการนี้";
+                    infoText.style.display = 'block';
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error checking permissions:', error);
+    }
+}
+
+async function checkReport() {
+    const btnCheck = document.getElementById('btn-check-report');
+    if (!btnCheck || !btnCheck.dataset.uuid) return;
+
+    // Disable button to prevent double click
+    btnCheck.disabled = true;
+    showLoader();
+
+    try {
+        const uuid = btnCheck.dataset.uuid;
+        const response = await fetch(`${basePath}/Home/CheckReport`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ uuid: uuid })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            Swal.fire({
+                title: 'สำเร็จ',
+                text: 'ตรวจสอบรายการเรียบร้อยแล้ว',
+                icon: 'success',
+                confirmButtonColor: '#4CAF50'
+            }).then(() => {
+                location.reload();
+            });
+        } else {
+            Swal.fire({
+                title: 'เกิดข้อผิดพลาด',
+                text: result.message || 'ไม่สามารถตรวจสอบรายการได้',
+                icon: 'error',
+                confirmButtonColor: '#f44336'
+            });
+            btnCheck.disabled = false; // Re-enable on failure
+        }
+    } catch (error) {
+        console.error('Error checking report:', error);
+        Swal.fire({
+            title: 'เกิดข้อผิดพลาด',
+            text: 'เกิดข้อผิดพลาดในการเชื่อมต่อ',
+            icon: 'error',
+            confirmButtonColor: '#f44336'
+        });
+        btnCheck.disabled = false;
+    } finally {
+        hideLoader();
+    }
+}
 
 async function loadReportData(uuid) {
     try {
@@ -155,31 +253,31 @@ function populateForm(data) {
     // Display uploaded images
     if (data.txt_uploaded_images && data.txt_uploaded_images.length > 0) {
         const uploadedImagesContainer = document.getElementById('uploaded-images-list');
-        
+
         if (uploadedImagesContainer) {
             const uploadedSection = document.getElementById('uploaded-images-container');
             const noImagesMessage = document.getElementById('no-images-message');
-            
+
             uploadedImagesContainer.innerHTML = '';
-            
+
             // Show container if exists (vCreateReport)
             if (uploadedSection) {
                 uploadedSection.style.display = 'block';
             }
-            
+
             // Hide no images message if exists (vViewReport)
             if (noImagesMessage) {
                 noImagesMessage.style.display = 'none';
             }
-            
+
             data.txt_uploaded_images.forEach(imageName => {
                 const imageItem = document.createElement('div');
                 imageItem.className = 'image-item';
                 imageItem.setAttribute('data-image-name', imageName);
-                
+
                 // Check if we're in edit mode (has delete button container)
                 const hasDeleteButton = document.getElementById('uploaded-images-container') !== null;
-                
+
                 imageItem.innerHTML = `
                     <img src="${basePath}/images/data_log/${imageName}" alt="${imageName}">
                     ${hasDeleteButton ? `
@@ -206,10 +304,92 @@ function populateForm(data) {
     if (typeof calculateRatio === 'function') calculateRatio();
     if (typeof calculateMaxMin === 'function') calculateMaxMin();
     if (typeof updateAutoFeed208T === 'function') updateAutoFeed208T();
-    
+
     // Fetch and display employee name if analysis_by is filled
     if (data.txt_analysis_by && data.txt_analysis_by.length >= 6) {
         fetchEmployeeName(data.txt_analysis_by);
+    }
+
+    // Handle Checked By display
+    const checkedByContainer = document.getElementById('checked-by-container');
+    const checkedByNameSpan = document.getElementById('checked-by-name');
+
+    if (checkedByContainer && checkedByNameSpan) {
+        if (data.txt_checkby && data.txt_checkby !== 'MISSING_KEY') {
+            checkedByContainer.style.setProperty('display', 'flex', 'important'); // Force show overriding inline style
+
+            // If checkby is same as analysis_by, use that name (likely fetched already)
+            if (data.txt_checkby === data.txt_analysis_by && document.getElementById('employee-name').textContent) {
+                // Parse name from "ID (Name)" format if needed, or just fetch again to be safe
+                fetchCheckedByEmployeeName(data.txt_checkby);
+            } else {
+                fetchCheckedByEmployeeName(data.txt_checkby);
+            }
+
+            // If already checked, hide the check button if present
+            const checkActions = document.querySelector('.check-actions');
+            if (checkActions) {
+                checkActions.style.display = 'none';
+            }
+        } else {
+            checkedByContainer.style.setProperty('display', 'none', 'important');
+
+            // Handle Check Button State based on Status
+            const btnCheck = document.getElementById('btn-check-report');
+            const infoText = document.getElementById('check-permission-info');
+
+            if (btnCheck) {
+                const canCheckPermission = btnCheck.dataset.canCheck === "true";
+
+                if (data.txt_status !== 'C') {
+                    // Not Complete - Disable Check
+                    btnCheck.disabled = true;
+                    if (infoText) {
+                        infoText.textContent = "รายการยังไม่สมบูรณ์ (ต้องเป็น Complete ถึงจะ Check ได้)";
+                        infoText.style.display = 'block';
+                    }
+                } else {
+                    // Complete - Check Permission
+                    if (canCheckPermission) {
+                        btnCheck.disabled = false;
+                        if (infoText) infoText.style.display = 'none';
+                    } else {
+                        btnCheck.disabled = true;
+                        // Text already set by checkPermissionAndSetupButton, but ensure it shows
+                        if (infoText) {
+                            if (infoText.textContent !== "โปรดติดต่อ FM ให้ Check รายการนี้") {
+                                infoText.textContent = "โปรดติดต่อ FM ให้ Check รายการนี้";
+                            }
+                            infoText.style.display = 'block';
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+async function fetchCheckedByEmployeeName(empno) {
+    try {
+        const employeeNameSpan = document.getElementById('checked-by-name');
+        if (!employeeNameSpan) return;
+
+        // Use analysis by name logic: empnameengshort1 is handled in PDF, here we show full name or whatever API returns
+        // Requirement: "ในช่อง Analysed จะเป็น [empnameengshort1] ของ txt_analysis_by" -> This refers to PDF Template
+        // Requirement: " Checked By section display: checked by XXXXXX (Name)" -> This remains as per previous logic?
+        // Wait, the requirement "ในช่อง Analysed จะเป็น [empnameengshort1] ของ txt_analysis_by" is for PDF.
+        // Let's stick to standard name display here for consistency unless specified.
+
+        const response = await fetch(`${basePath}/Home/GetEmployeeByEmpno?empno=${encodeURIComponent(empno)}`);
+        const data = await response.json();
+
+        if (data.success && data.empnameeng) {
+            employeeNameSpan.textContent = `${empno} (${data.empnameeng})`;
+        } else {
+            employeeNameSpan.textContent = `${empno} (ไม่พบข้อมูลพนักงาน)`;
+        }
+    } catch (error) {
+        console.error('Error fetching checked by employee:', error);
     }
 }
 
@@ -217,10 +397,10 @@ async function fetchEmployeeName(empno) {
     try {
         const employeeNameSpan = document.getElementById('employee-name');
         if (!employeeNameSpan) return;
-        
+
         const response = await fetch(`${basePath}/Home/GetEmployeeByEmpno?empno=${encodeURIComponent(empno)}`);
         const data = await response.json();
-        
+
         if (data.success && data.empnameeng) {
             employeeNameSpan.textContent = `(${data.empnameeng})`;
             employeeNameSpan.style.color = '#00bcd4';

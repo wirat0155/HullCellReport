@@ -24,7 +24,7 @@ namespace HullCellReport.Repositories
             if (requirePermission1513)
             {
                 // เอาเฉพาะพนักงานที่มีสิทธิ์ 1513
-                sql = $@"SELECT [empno], [empnameeng], [empstatusno], [departmentno], [departmentnameeng], [positionnameeng] 
+                sql = $@"SELECT [empno], [empnameeng], [empnameengshort1], [empstatusno], [departmentno], [departmentnameeng], [positionnameeng] 
                         FROM [vw_emp] 
                         WHERE [empno] = @txt_empno
                         AND EXISTS (
@@ -37,7 +37,7 @@ namespace HullCellReport.Repositories
             else
             {
                 // พนักงานคนใดก็ได้
-                sql = $@"SELECT [empno], [empnameeng], [empstatusno], [departmentno], [departmentnameeng], [positionnameeng] 
+                sql = $@"SELECT [empno], [empnameeng], [empnameengshort1], [empstatusno], [departmentno], [departmentnameeng], [positionnameeng] 
                         FROM [vw_emp] 
                         WHERE [empno] = @txt_empno";
             }
@@ -49,7 +49,7 @@ namespace HullCellReport.Repositories
         {
             string sql = @"SELECT COUNT(*) FROM [usermenu] 
                           WHERE [username] = @empno 
-                          AND ([mnuid] = 1513 OR [mnuid] = 1514)";
+                          AND ([mnuid] = 1513 OR [mnuid] = 1514 OR [mnuid] = 1515)";
             var count = await _dapper.ExecuteScalar<int>("UICT", sql, new { empno });
             return count > 0;
         }
@@ -86,9 +86,12 @@ namespace HullCellReport.Repositories
                 LEFT JOIN usermenu um2 
                     ON e.empno = um2.username
                     AND um2.mnuid = 1514
+                LEFT JOIN usermenu um3 
+                    ON e.empno = um3.username
+                    AND um3.mnuid = 1515
                 WHERE 
                     e.empstatusno = 'N'
-                    AND (um1.username IS NOT NULL OR um2.username IS NOT NULL)
+                    AND (um1.username IS NOT NULL OR um2.username IS NOT NULL OR um3.username IS NOT NULL)
                     AND ('{search}' = '' 
                         OR e.empno LIKE '%{search}%'
                         OR e.empnameeng LIKE '%{search}%'
@@ -116,7 +119,13 @@ namespace HullCellReport.Repositories
                              AND um2.id_enabled = 1 
                              AND um2.id_visible = 1 
                         THEN 1 ELSE 0 
-                    END AS canManagePermission
+                    END AS canManagePermission,
+                    CASE 
+                        WHEN um3.username IS NOT NULL 
+                             AND um3.id_enabled = 1 
+                             AND um3.id_visible = 1 
+                        THEN 1 ELSE 0 
+                    END AS reportCheck
                 FROM vw_emp e
                 LEFT JOIN usermenu um1 
                     ON e.empno = um1.username 
@@ -124,9 +133,12 @@ namespace HullCellReport.Repositories
                 LEFT JOIN usermenu um2 
                     ON e.empno = um2.username
                     AND um2.mnuid = 1514
+                LEFT JOIN usermenu um3 
+                    ON e.empno = um3.username
+                    AND um3.mnuid = 1515
                 WHERE 
                     e.empstatusno = 'N'
-                    AND (um1.username IS NOT NULL OR um2.username IS NOT NULL)
+                    AND (um1.username IS NOT NULL OR um2.username IS NOT NULL OR um3.username IS NOT NULL)
                     AND ('{search}' = '' 
                         OR e.empno LIKE '%{search}%'
                         OR e.empnameeng LIKE '%{search}%'
@@ -213,6 +225,41 @@ namespace HullCellReport.Repositories
             return true;
         }
 
+        public async Task<bool> UpdateReportCheckAccess(string username, bool hasAccess)
+        {
+            if (hasAccess)
+            {
+                // เพิ่มสิทธิ์ Report Check (mnuid = 1515)
+                string checkSql = @"SELECT COUNT(*) FROM usermenu 
+                                   WHERE username = @username AND mnuid = 1515";
+                var exists = await _dapper.ExecuteScalar<int>("UICT", checkSql, new { username });
+                
+                if (exists == 0)
+                {
+                    string insertSql = @"INSERT INTO usermenu (username, mnuid, id_enabled, id_visible) 
+                                        VALUES (@username, 1515, 1, 1)";
+                    await _dapper.Execute("UICT", insertSql, new { username });
+                }
+                else
+                {
+                    string updateSql = @"UPDATE usermenu 
+                                        SET id_enabled = 1, id_visible = 1 
+                                        WHERE username = @username AND mnuid = 1515";
+                    await _dapper.Execute("UICT", updateSql, new { username });
+                }
+            }
+            else
+            {
+                // ปิดสิทธิ์ Report Check
+                string updateSql = @"UPDATE usermenu 
+                                    SET id_enabled = 0, id_visible = 0 
+                                    WHERE username = @username AND mnuid = 1515";
+                await _dapper.Execute("UICT", updateSql, new { username });
+            }
+            
+            return true;
+        }
+
         public async Task<Dictionary<string, string>> GetEmployeeNamesByEmpnos(IEnumerable<string> empnos)
         {
             if (empnos == null || !empnos.Any())
@@ -250,6 +297,17 @@ namespace HullCellReport.Repositories
                 throw new Exception("คุณไม่มีสิทธิ์เข้าใช้งานระบบนี้");
             
             return true;
+        }
+
+        public async Task<bool> CheckPermissionReportCheck(string empno)
+        {
+            // mnuid 1515 = Report Check Permission
+            string sql = @"SELECT COUNT(*) FROM [usermenu] 
+                          WHERE [username] = @empno 
+                          AND [mnuid] = 1515 
+                          AND [id_enabled] = 1";
+            var count = await _dapper.ExecuteScalar<int>("UICT", sql, new { empno });
+            return count > 0;
         }
     }
 }

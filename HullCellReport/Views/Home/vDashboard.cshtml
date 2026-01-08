@@ -468,26 +468,83 @@
         .sampling-status-badge.incomplete {
             background: rgba(255, 152, 0, 0.3);
         }
+        
+    .unchecked-count-card {
+        background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 0px;
+        color: white;
+        box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+        display: none; /* Initially hidden */
+        transition: all 0.3s ease;
+        flex: 1;
+    }
+    
+    .unchecked-count-card.show {
+        display: block;
+    }
+    
+    .unchecked-count-card.empty-state {
+        background: linear-gradient(135deg, #9e9e9e 0%, #757575 100%);
+        box-shadow: 0 4px 12px rgba(158, 158, 158, 0.3);
+    }
+    
+    .stats-container {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+    
+    /* Make sampling card flex too */
+    .sampling-count-card {
+        margin-bottom: 0px; /* Remove bottom margin as container handles it */
+        flex: 1;
+    }
 </style>
 
 <div class="container-fluid py-4">
-    <!-- Sampling Count Card (shown only when filtering by today) -->
-    <div class="sampling-count-card" id="samplingCountCard">
-        <div class="sampling-count-content">
-            <div class="sampling-count-icon">
-                <i class="fas fa-calendar-check"></i>
-            </div>
-            <div class="sampling-count-info">
-                <div class="sampling-count-label">
-                    จำนวนครั้งที่ทำวันนี้
-                    <span style="font-size: 12px; opacity: 0.8; margin-left: 8px;" id="todayDate"></span>
+    <!-- Stats Container -->
+    <div class="stats-container">
+        <!-- Sampling Count Card (shown only when filtering by today) -->
+        <div class="sampling-count-card" id="samplingCountCard">
+            <div class="sampling-count-content">
+                <div class="sampling-count-icon">
+                    <i class="fas fa-calendar-check"></i>
                 </div>
-                <div class="sampling-count-value">
-                    <span class="count" id="samplingCount">0</span><span class="total">/2</span>
+                <div class="sampling-count-info">
+                    <div class="sampling-count-label">
+                        จำนวนครั้งที่ทำวันนี้
+                        <span style="font-size: 12px; opacity: 0.8; margin-left: 8px;" id="todayDate"></span>
+                    </div>
+                    <div class="sampling-count-value">
+                        <span class="count" id="samplingCount">0</span><span class="total">/2</span>
+                    </div>
+                </div>
+                <div class="sampling-count-status">
+                    <span class="sampling-status-badge" id="samplingStatusBadge">ยังไม่ครบ</span>
                 </div>
             </div>
-            <div class="sampling-count-status">
-                <span class="sampling-status-badge" id="samplingStatusBadge">ยังไม่ครบ</span>
+        </div>
+        
+        <!-- Unchecked Items Card (always shown if count > 0, logic in JS) -->
+        <div class="unchecked-count-card" id="uncheckedCountCard">
+            <div class="sampling-count-content">
+                <div class="sampling-count-icon">
+                    <i class="fas fa-clipboard-check"></i>
+                </div>
+                <div class="sampling-count-info">
+                    <div class="sampling-count-label">
+                        รายการที่รอตรวจสอบ
+                    </div>
+                    <div class="sampling-count-value">
+                        <span class="count" id="uncheckedCount">0</span>
+                        <span style="font-size:16px; font-weight:normal; opacity:0.8;">รายการ</span>
+                    </div>
+                </div>
+                <div class="sampling-count-status">
+                    <span class="sampling-status-badge" style="background: rgba(255,255,255,0.2);">Action Needed</span>
+                </div>
             </div>
         </div>
     </div>
@@ -503,7 +560,7 @@
                 <div class="filter-group">
                     <label class="filter-label">ช่วงเวลา</label>
                     <select class="filter-select" id="dateRangeSelect" onchange="handleQuickDateRange(this.value)">
-                        <option value="">กำหนดเอง</option>
+                        <option value="custom">กำหนดเอง</option>
                         <option value="today">วันนี้</option>
                         <option value="week">1 สัปดาห์ล่าสุด</option>
                         <option value="month">1 เดือนล่าสุด</option>
@@ -523,6 +580,14 @@
                         <option value="">ทั้งหมด</option>
                         <option value="C">Complete</option>
                         <option value="D">Draft</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">สถานะการตรวจสอบ</label>
+                    <select class="filter-select" id="checkStatusFilter">
+                        <option value="">ทั้งหมด</option>
+                        <option value="checked">ตรวจสอบแล้ว</option>
+                        <option value="unchecked">ยังไม่ตรวจสอบ</option>
                     </select>
                 </div>
                 <div class="filter-group" style="flex: 0;">
@@ -553,6 +618,10 @@
                         <th>208A</th>
                         <th>208B</th>
                         <th>สถานะ</th>
+                        <th>
+                            Check
+                            <i class="fas fa-sort sort-icon" onclick="toggleSort('checkDate')" id="sortIconCheckDate"></i>
+                        </th>
                         <th>จัดการ</th>
                         <th>Export</th>
                     </tr>

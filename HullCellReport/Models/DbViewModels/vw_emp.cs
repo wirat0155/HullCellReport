@@ -9,6 +9,7 @@ namespace HullCellReport.Models.DbViewModels
     {
         public string empno { get; set; }
         public string empnameeng { get; set; }
+        public string empnameengshort1 { get; set; }
         public string empstatusno { get; set; }
         public string departmentno { get; set; }
         public string departmentnameeng { get; set; }

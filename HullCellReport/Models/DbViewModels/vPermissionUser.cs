@@ -9,5 +9,6 @@ namespace HullCellReport.Models.DbViewModels
         public string positionnameeng { get; set; }
         public bool hasSystemAccess { get; set; }
         public bool canManagePermission { get; set; }
+        public bool reportCheck { get; set; }
     }
 }

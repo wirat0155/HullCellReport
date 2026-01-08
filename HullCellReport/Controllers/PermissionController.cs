@@ -96,6 +96,21 @@ namespace HullCellReport.Controllers
             }
         }
 
+        [HttpPost]
+        public async Task<IActionResult> UpdateReportCheckAccess([FromBody] UpdatePermissionRequest request)
+        {
+            try
+            {
+                await _employeeRepo.UpdateReportCheckAccess(request.username, request.hasAccess);
+                return Json(new { success = true, message = "อัพเดทสิทธิ์ Report Check สำเร็จ" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating report check access");
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
         [HttpGet]
         public async Task<IActionResult> CheckEmployee(string empno)
         {

@@ -323,6 +323,7 @@
                     <th>ตำแหน่ง</th>
                     <th>เข้าใช้งานระบบได้</th>
                     <th>จัดการสิทธิ์ได้</th>
+                    <th>Report Check</th>
                 </tr>
             </thead>
             <tbody id="userTableBody">
@@ -507,6 +508,12 @@
                             <span class="slider"></span>
                         </label>
                     </td>
+                    <td>
+                        <label class="switch">
+                            <input type="checkbox" ${user.reportCheck ? 'checked' : ''} onchange="toggleReportCheck('${user.empno}', this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                    </td>
                 </tr>
             `).join('');
         }
@@ -595,6 +602,47 @@
                 }
             } catch (error) {
                 console.error('Error updating manage permission:', error);
+                Swal.fire({
+                    title: 'ข้อผิดพลาด',
+                    text: 'เกิดข้อผิดพลาดในการอัพเดทสิทธิ์',
+                    icon: 'error',
+                    confirmButtonColor: '#00bcd4'
+                });
+                loadUsers(currentPage);
+            }
+        }
+
+        async function toggleReportCheck(empno, hasAccess) {
+            try {
+                const response = await fetch(`${basePath}/Permission/UpdateReportCheckAccess`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username: empno, hasAccess: hasAccess })
+                });
+
+                const { success, message } = await response.json();
+
+                if (success) {
+                    Swal.fire({
+                        title: 'สำเร็จ',
+                        text: message,
+                        icon: 'success',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'ข้อผิดพลาด',
+                        text: message,
+                        icon: 'error',
+                        confirmButtonColor: '#00bcd4'
+                    });
+                    loadUsers(currentPage);
+                }
+            } catch (error) {
+                console.error('Error updating report check access:', error);
                 Swal.fire({
                     title: 'ข้อผิดพลาด',
                     text: 'เกิดข้อผิดพลาดในการอัพเดทสิทธิ์',

@@ -112,5 +112,8 @@ namespace HullCellReport.Models
         public string txt_updateuser {get; set;}
         public DateTime txt_credate {get; set;}
         public DateTime txt_updatedate { get; set; }
+        
+        public string txt_checkby { get; set; } = "MISSING_KEY";
+        public string txt_checkdate { get; set; }
     }
 }

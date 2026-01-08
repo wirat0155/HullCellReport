@@ -256,7 +256,7 @@ namespace HullCellReport.Controllers
                                     await SendToThingsBoard(form);
                                     
                                     // Export PDF and save to File Server
-                                    await ExportAndSavePDFToFileServer(form);
+                                    await ExportAndSavePdfToFileServer(form);
                                     
                                     // Get data for Node-RED to send from client
                                     var nodeRedData = GetNodeRedData(form);
@@ -312,7 +312,12 @@ namespace HullCellReport.Controllers
                     form.txt_creuser = jwtUser;
                     form.txt_updateuser = jwtUser;
                     form.txt_credate = currentTime;
+                    form.txt_credate = currentTime;
                     form.txt_updatedate = currentTime;
+                    
+                    // Explicitly set check fields to null for new items (so they are not "MISSING_KEY")
+                    form.txt_checkby = null;
+                    form.txt_checkdate = null;
 
                     // Get current year
                     var currentYear = currentTime.Year;
@@ -348,7 +353,7 @@ namespace HullCellReport.Controllers
                         await SendToThingsBoard(form);
                         
                         // Export PDF and save to File Server
-                        await ExportAndSavePDFToFileServer(form);
+                        await ExportAndSavePdfToFileServer(form);
                         
                         // Get data for Node-RED to send from client
                         var nodeRedData = GetNodeRedData(form);
@@ -891,7 +896,9 @@ namespace HullCellReport.Controllers
             string sortOrder = "desc",
             string startDate = "",
             string endDate = "",
-            string status = "")
+            string status = "",
+            string checkStatus = "",
+            string sortColumn = "createdDate")
         {
             try
             {
@@ -950,8 +957,15 @@ namespace HullCellReport.Controllers
                 var uniqueEmpnos = allReports
                     .Where(r => !string.IsNullOrEmpty(r.txt_analysis_by))
                     .Select(r => r.txt_analysis_by)
-                    .Distinct()
                     .ToList();
+                
+                var checkByEmpnos = allReports
+                    .Where(r => !string.IsNullOrEmpty(r.txt_checkby) && r.txt_checkby != "MISSING_KEY")
+                    .Select(r => r.txt_checkby)
+                    .ToList();
+                
+                uniqueEmpnos.AddRange(checkByEmpnos);
+                uniqueEmpnos = uniqueEmpnos.Distinct().ToList();
 
                 var empNameMap = await _employeeRepo.GetEmployeeNamesByEmpnos(uniqueEmpnos);
 
@@ -966,7 +980,11 @@ namespace HullCellReport.Controllers
                     tank208T = r.txt_auto_feed_208t ?? "",
                     tank208A = r.txt_auto_feed_208a ?? "",
                     tank208B = r.txt_auto_feed_208b ?? "",
-                    status = r.txt_status ?? ""
+                    status = r.txt_status ?? "",
+                    checkByStatus = r.txt_checkby == "MISSING_KEY" ? "System" : (string.IsNullOrEmpty(r.txt_checkby) ? "Pending" : "Checked"),
+                    checkByName = (r.txt_checkby != "MISSING_KEY" && !string.IsNullOrEmpty(r.txt_checkby) && empNameMap.ContainsKey(r.txt_checkby)) ? empNameMap[r.txt_checkby] : r.txt_checkby,
+                    checkDate = r.txt_checkdate, // Expected to be string. If we want formatting, we can tackle it in JS or here if it needs parsing.
+                    checkDateVal = !string.IsNullOrEmpty(r.txt_checkdate) && DateTime.TryParse(r.txt_checkdate, out DateTime cd) ? cd : (DateTime?)null
                 }).ToList();
 
                 // Apply filters
@@ -990,14 +1008,42 @@ namespace HullCellReport.Controllers
                     filteredData = filteredData.Where(x => x.status == status);
                 }
 
-                // Apply sorting
-                if (sortOrder == "asc")
+                // Filter by check status
+                if (!string.IsNullOrEmpty(checkStatus))
                 {
-                    filteredData = filteredData.OrderBy(x => x.createdDate);
+                    if (checkStatus == "checked")
+                    {
+                        // Show items that are "Checked" (User) or "System"
+                        filteredData = filteredData.Where(x => x.checkByStatus == "Checked" || x.checkByStatus == "System"); 
+                    }
+                    else if (checkStatus == "unchecked")
+                    {
+                        filteredData = filteredData.Where(x => x.checkByStatus == "Pending");
+                    }
+                }
+
+                // Apply sorting
+                if (sortColumn == "checkDate")
+                {
+                    if (sortOrder == "asc")
+                    {
+                        filteredData = filteredData.OrderBy(x => x.checkDateVal ?? DateTime.MaxValue); // Nulls last?
+                    }
+                    else
+                    {
+                        filteredData = filteredData.OrderByDescending(x => x.checkDateVal ?? DateTime.MinValue);
+                    }
                 }
                 else
                 {
-                    filteredData = filteredData.OrderByDescending(x => x.createdDate);
+                    if (sortOrder == "asc")
+                    {
+                        filteredData = filteredData.OrderBy(x => x.createdDate);
+                    }
+                    else
+                    {
+                        filteredData = filteredData.OrderByDescending(x => x.createdDate);
+                    }
                 }
 
                 var sortedData = filteredData.ToList();
@@ -1017,7 +1063,21 @@ namespace HullCellReport.Controllers
 
                 var todayDateString = todayBangkok.ToString("dd/MM/yyyy", new System.Globalization.CultureInfo("th-TH"));
 
-                return Json(new { success = true, data = pagedData, total, todaySamplingCount, todayDate = todayDateString });
+                // Calculate unchecked count (items where checkby exists but is null/empty)
+                // We use "MISSING_KEY" sentinel to distinguish legacy items
+                int uncheckedCount = allReports.Count(r => 
+                    r.txt_checkby != "MISSING_KEY" && 
+                    string.IsNullOrEmpty(r.txt_checkby)
+                );
+
+                return Json(new { 
+                    success = true, 
+                    data = pagedData, 
+                    total, 
+                    todaySamplingCount, 
+                    todayDate = todayDateString,
+                    uncheckedCount 
+                });
             }
             catch (Exception ex)
             {
@@ -1241,10 +1301,43 @@ namespace HullCellReport.Controllers
             }
         }
 
-        private async Task ExportAndSavePDFToFileServer(CreateReportFM report)
+        private async Task ExportAndSavePdfToFileServer(CreateReportFM originalReport)
         {
             try
             {
+                // Create a copy to modify for PDF display
+                var report = JsonSerializer.Deserialize<CreateReportFM>(JsonSerializer.Serialize(originalReport));
+
+                // Resolve Analysed By Name (empnameengshort1)
+                if (!string.IsNullOrEmpty(report.txt_analysis_by))
+                {
+                    try 
+                    {
+                        var empAnalysed = await _employeeRepo.GetByEmpno(report.txt_analysis_by, false);
+                        if (empAnalysed != null && !string.IsNullOrEmpty(empAnalysed.empnameengshort1))
+                        {
+                            report.txt_analysis_by = empAnalysed.empnameengshort1;
+                        }
+                    }
+                    catch { /* Ignore */ }
+                }
+
+                // Resolve Checked By Name (empnameengshort1)
+                // If it is "System" or "MISSING_KEY", leave it (Report.cshtml handles it). 
+                // If it looks like an empno, try check.
+                if (!string.IsNullOrEmpty(report.txt_checkby) && report.txt_checkby != "MISSING_KEY" && report.txt_checkby != "System")
+                {
+                    try
+                    {
+                        var empChecked = await _employeeRepo.GetByEmpno(report.txt_checkby, false);
+                        if (empChecked != null && !string.IsNullOrEmpty(empChecked.empnameengshort1))
+                        {
+                            report.txt_checkby = empChecked.empnameengshort1;
+                        }
+                    }
+                    catch { /* Ignore */ }
+                }
+
                 // Render view to string
                 var viewPath = "~/Views/PDFTemplate/Report.cshtml";
                 var htmlContent = await RenderViewToStringAsync(viewPath, report);
@@ -1347,6 +1440,167 @@ namespace HullCellReport.Controllers
         public IActionResult Error()
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> CheckPendingReports()
+        {
+            try
+            {
+                var dataLogPath = Path.Combine(_env.WebRootPath, "data_log");
+                if (!Directory.Exists(dataLogPath))
+                {
+                    return Json(new { hasPending = false });
+                }
+
+                var jsonFiles = Directory.GetFiles(dataLogPath, "*.json");
+                var today = DateTime.Today;
+                var oneDayAgo = today.AddDays(-1);
+                bool hasPending = false;
+                DateTime? oldestPendingDate = null;
+
+                foreach (var filePath in jsonFiles)
+                {
+                    var jsonContent = await System.IO.File.ReadAllTextAsync(filePath);
+                    if (!string.IsNullOrWhiteSpace(jsonContent))
+                    {
+                        var reports = JsonSerializer.Deserialize<List<CreateReportFM>>(jsonContent);
+                        if (reports != null)
+                        {
+                            // Filter logic:
+                            // 1. Has txt_checkby key (not "MISSING_KEY")
+                            // 2. txt_checkby is null or empty (meaning not checked)
+                            // 3. txt_credate is OLDER than Today (strictly < today)
+                            // This matches requirement: "ถ้ามีอย่างน้อย 1 รายการที่ txt_credate เก่ากว่า 2026 Jan 08 (today)"
+                            
+                            var pendingReports = reports.Where(r => 
+                                r.txt_checkby != "MISSING_KEY" && 
+                                string.IsNullOrEmpty(r.txt_checkby) &&
+                                r.txt_credate.Date < today
+                            ).ToList();
+
+                            if (pendingReports.Any())
+                            {
+                                hasPending = true;
+                                var minDate = pendingReports.Min(r => r.txt_credate);
+                                if (oldestPendingDate == null || minDate < oldestPendingDate)
+                                {
+                                    oldestPendingDate = minDate;
+                                }
+                                // We continue checking all files to find the absolute oldest date
+                            }
+                        }
+                    }
+                }
+
+                return Json(new { hasPending, oldestDate = oldestPendingDate?.ToString("yyyy-MM-dd") });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error checking pending reports");
+                return Json(new { hasPending = false, error = ex.Message });
+            }
+        }
+        [HttpPost]
+        public async Task<IActionResult> CheckReport([FromBody] Dictionary<string, string> request)
+        {
+            try
+            {
+                if (!request.ContainsKey("uuid"))
+                {
+                    return Json(new { success = false, message = "UUID is required" });
+                }
+
+                var uuid = request["uuid"];
+                var username = _claimsHelper.GetUserId(User) ?? "ADMIN";
+
+                // Check permission 1515
+                var hasPermission = await _employeeRepo.CheckPermissionReportCheck(username);
+                if (!hasPermission)
+                {
+                    return Json(new { success = false, message = "คุณไม่มีสิทธิ์ในการตรวจสอบรายงาน (Permission 1515)" });
+                }
+
+                // Logic to update the report in JSON
+                var dataLogPath = Path.Combine(_env.WebRootPath, "data_log");
+                bool updated = false;
+
+                if (Directory.Exists(dataLogPath))
+                {
+                    var jsonFiles = Directory.GetFiles(dataLogPath, "*.json");
+                    foreach (var filePath in jsonFiles)
+                    {
+                        var jsonContent = await System.IO.File.ReadAllTextAsync(filePath);
+                        if (!string.IsNullOrWhiteSpace(jsonContent))
+                        {
+                            var reports = JsonSerializer.Deserialize<List<CreateReportFM>>(jsonContent);
+                            var report = reports?.FirstOrDefault(r => r.txt_uuid == uuid);
+                            
+                            if (report != null)
+                            {
+                                // Update Check info
+                                report.txt_checkby = username;
+                                report.txt_checkdate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"); // Standard format
+
+                                // Save updated list back to file
+                                var options = new JsonSerializerOptions
+                                {
+                                    WriteIndented = true,
+                                    Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+                                };
+                                var newJsonString = JsonSerializer.Serialize(reports, options);
+                                await System.IO.File.WriteAllTextAsync(filePath, newJsonString);
+                                
+                                updated = true;
+                                
+                                // Generate PDF after check
+                                try
+                                {
+                                    // Generate PDF after check - Name resolution is now handled inside ExportAndSavePdfToFileServer
+                                    await ExportAndSavePdfToFileServer(report);
+                                }
+                                catch (Exception ex)
+                                {
+                                    _logger.LogError(ex, "Error generating PDF after check");
+                                }
+
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (updated)
+                {
+                    return Json(new { success = true });
+                }
+                else
+                {
+                    return Json(new { success = false, message = "ไม่พบรายงานที่ต้องการตรวจสอบ" });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error checking report");
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetCurrentUserPermissions()
+        {
+            try
+            {
+                var username = _claimsHelper.GetUserId(User) ?? "ADMIN";
+                var canCheckReport = await _employeeRepo.CheckPermissionReportCheck(username);
+
+                return Json(new { success = true, canCheckReport });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting user permissions");
+                return Json(new { success = false, message = ex.Message });
+            }
         }
     }
 
