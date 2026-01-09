@@ -16,17 +16,24 @@
         time = t;
     }
 
-    string checkByName = "System";
-    if (!string.IsNullOrEmpty(Model.txt_checkby) && Model.txt_checkby != "MISSING_KEY")
+    string checkByName = "-";
+    if (!string.IsNullOrEmpty(Model.txt_checkby))
     {
-        try
+        if (Model.txt_checkby == "MISSING_KEY")
         {
-            var emp = await EmployeeRepo.GetByEmpno(Model.txt_checkby, requirePermission1513: false);
-            checkByName = emp?.empnameengshort1 ?? Model.txt_checkby;
+            checkByName = "System";
         }
-        catch
+        else
         {
-            checkByName = Model.txt_checkby;
+            try
+            {
+                var emp = await EmployeeRepo.GetByEmpno(Model.txt_checkby, requirePermission1513: false);
+                checkByName = emp?.empnameengshort1 ?? Model.txt_checkby;
+            }
+            catch
+            {
+                checkByName = Model.txt_checkby;
+            }
         }
     }
 
