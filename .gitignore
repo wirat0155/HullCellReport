@@ -361,3 +361,7 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Ignore uploaded data logs
+HullCellReport/wwwroot/images/data_log/
+HullCellReport/wwwroot/data_log/

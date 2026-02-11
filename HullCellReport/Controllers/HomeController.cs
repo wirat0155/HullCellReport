@@ -383,25 +383,25 @@ namespace HullCellReport.Controllers
                 var telemetryData = new List<Dictionary<string, object>>();
 
                 // Process 208N
-                var feed208n = ProcessAutoFeedData("208n", form.txt_auto_feed_208n, form.txt_uuid);
+                var feed208n = ProcessAutoFeedData("208n", form.txt_auto_feed_208n, form.txt_adjust_208n, form.txt_uuid);
                 telemetryData.Add(feed208n);
 
                 // Process 208T
-                var feed208t = ProcessAutoFeedData("208t", form.txt_auto_feed_208t, form.txt_uuid);
+                var feed208t = ProcessAutoFeedData("208t", form.txt_auto_feed_208t, form.txt_adjust_208t, form.txt_uuid);
                 telemetryData.Add(feed208t);
 
                 // Process 208A
-                var feed208a = ProcessAutoFeedData("208a", form.txt_auto_feed_208a, form.txt_uuid);
+                var feed208a = ProcessAutoFeedData("208a", form.txt_auto_feed_208a, form.txt_adjust_208a, form.txt_uuid);
                 telemetryData.Add(feed208a);
 
                 // Process 208B
-                var feed208b = ProcessAutoFeedData("208b", form.txt_auto_feed_208b, form.txt_uuid);
+                var feed208b = ProcessAutoFeedData("208b", form.txt_auto_feed_208b, form.txt_adjust_208b, form.txt_uuid);
                 telemetryData.Add(feed208b);
 
                 // Send to ThingsBoard only
                 using (var httpClient = new System.Net.Http.HttpClient())
                 {
-                    var url = "http://thingsboard.cloud/api/v1/lP2VHpjA0nd9YCOHRRLL/telemetry";
+                    var url = _configuration["ThingsBoard:TelemetryUrl"];
                     var jsonContent = JsonSerializer.Serialize(telemetryData);
                     var content = new System.Net.Http.StringContent(jsonContent, System.Text.Encoding.UTF8, "application/json");
 
@@ -429,28 +429,29 @@ namespace HullCellReport.Controllers
             var telemetryData = new List<Dictionary<string, object>>();
 
             // Process 208N
-            var feed208n = ProcessAutoFeedData("208n", form.txt_auto_feed_208n, form.txt_uuid);
+            var feed208n = ProcessAutoFeedData("208n", form.txt_auto_feed_208n, form.txt_adjust_208n, form.txt_uuid);
             telemetryData.Add(feed208n);
 
             // Process 208T
-            var feed208t = ProcessAutoFeedData("208t", form.txt_auto_feed_208t, form.txt_uuid);
+            var feed208t = ProcessAutoFeedData("208t", form.txt_auto_feed_208t, form.txt_adjust_208t, form.txt_uuid);
             telemetryData.Add(feed208t);
 
             // Process 208A
-            var feed208a = ProcessAutoFeedData("208a", form.txt_auto_feed_208a, form.txt_uuid);
+            var feed208a = ProcessAutoFeedData("208a", form.txt_auto_feed_208a, form.txt_adjust_208a, form.txt_uuid);
             telemetryData.Add(feed208a);
 
             // Process 208B
-            var feed208b = ProcessAutoFeedData("208b", form.txt_auto_feed_208b, form.txt_uuid);
+            var feed208b = ProcessAutoFeedData("208b", form.txt_auto_feed_208b, form.txt_adjust_208b, form.txt_uuid);
             telemetryData.Add(feed208b);
 
             return telemetryData;
         }
 
-        private Dictionary<string, object> ProcessAutoFeedData(string feedType, string value, string uuid = null)
+        private Dictionary<string, object> ProcessAutoFeedData(string feedType, string value, string adjustValue, string uuid = null)
         {
             int status = 1; // Default: Open (1)
             int stopDurationH = 0;
+            double adjustMl = 0;
 
             if (!string.IsNullOrEmpty(value))
             {
@@ -472,6 +473,24 @@ namespace HullCellReport.Controllers
                 }
             }
 
+            // Extract adjust volume
+            if (!string.IsNullOrEmpty(adjustValue))
+            {
+                var match = System.Text.RegularExpressions.Regex.Match(adjustValue, @"(\d+(?:\.\d+)?)\s*(ลิตร|l|ml|มล)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                if (match.Success && double.TryParse(match.Groups[1].Value, out double val))
+                {
+                    string unit = match.Groups[2].Value.ToLower();
+                    if (unit == "ลิตร" || unit == "l")
+                    {
+                        adjustMl = val * 1000;
+                    }
+                    else
+                    {
+                        adjustMl = val;
+                    }
+                }
+            }
+
             // Create keys with prefix (e.g., auto_feed_208n_name, auto_feed_208n_status, etc.)
             var prefix = $"auto_feed_{feedType}";
             var result = new Dictionary<string, object>
@@ -479,7 +498,8 @@ namespace HullCellReport.Controllers
                 { $"{prefix}_name", prefix },
                 { $"{prefix}_status", status },
                 { $"{prefix}_stop_duration_h", stopDurationH },
-                { $"{prefix}_report_id", uuid ?? "" }
+                { $"{prefix}_report_id", uuid ?? "" },
+                { $"{prefix}_adjust_ml", adjustMl }
             };
 
             return result;
