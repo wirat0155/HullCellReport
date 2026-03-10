@@ -1,6 +1,7 @@
 ﻿using HullCellReport.Models.DbViewModels;
 using HullCellReport.Repositories;
 using JWTRegen.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -10,6 +11,7 @@ using System.Threading.Tasks;
 
 namespace HullCellReport.Controllers
 {
+    [AllowAnonymous]
     public class AuthController : BaseController
     {
         private readonly EmployeeRepository _emp;

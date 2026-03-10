@@ -34,4 +34,9 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Remove="wwwroot\data_log\**" />
+    <Content Remove="wwwroot\images\data_log\**" />
+  </ItemGroup>
+
 </Project>
